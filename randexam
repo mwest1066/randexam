@@ -711,7 +711,7 @@ def keys_to_exams(K, k, u):
     e = np.zeros(N_s, dtype=int)
     for si in range(N_s):
         if k[si] not in K:
-            print("Warning: key %s for student %s/%s/%s/%s not found"
+            print("WARNING: key %s for student %s/%s/%s/%s not found"
                   % (k[si], u[si,0], u[si,1], u[si,2], u[si,3]))
             e[si] = -1
         else:
