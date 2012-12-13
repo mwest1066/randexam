@@ -568,7 +568,7 @@ def write_exams(output_filename, library, K, Q, V, A):
         out_f.write(r"\begin{document}" + "\n")
 
         for ei in range(N_e):
-            out_f.write((r"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" + "\n") * 4)
+            out_f.write(("%" * 70 + "\n") * 4)
             out_f.write(r"\newpage" + "\n\n")
             out_f.write(r"\setcounter{page}{1}")
             out_f.write(library.coverpage + "\n")
