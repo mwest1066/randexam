@@ -625,19 +625,27 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
     u_data = []
     k_data = []
     a_data = []
-    def error_if_match(s, pattern, offset, field, min_length):
-        if len(s) < min_length:
-            raise Exception("field '%s' at character %d has length %d but must be at least %d: %s"
-                            % (field, offset + 1, len(s), min_length, s))
-        match = re.search(pattern, s)
-        if match:
-            i = match.start()
-            raise Exception("invalid character '%s' at character %d at position %d in field '%s': %s"
-                            % (s[i], i + offset + 1, i + 1, field, s))
-        return s
     key_length = len(generate_key(0, N_e, N_A))
     with open(input_filename, "r") as in_f:
         for (i_line, line) in enumerate(in_f):
+            def check_match(s, pattern, offset, field, min_length):
+                cleaned_s = re.sub(pattern, "", s)
+                if len(s) == 0 and min_length > 0:
+                    print("%s:%s: WARNING: field '%s' at character %d is empty"
+                          % (input_filename, i_line + 1, field, offset + 1))
+                    return cleaned_s
+                if len(s) < min_length:
+                    print("%s:%s: WARNING: field '%s' at character %d has length %d but should be at least %d: %s"
+                          % (input_filename, i_line + 1, field, offset + 1, len(s), min_length, s))
+                    return cleaned_s
+                match = re.search(pattern, s)
+                if match:
+                    i = match.start()
+                    print("%s:%s: WARNING: invalid character '%s' at character %d at position %d in field '%s': %s"
+                          % (input_filename, i_line + 1, s[i], i + offset + 1, i + 1, field, s))
+                    return cleaned_s
+                return s
+
             if len(line) == 1 and ord(line[0]) == 26:
                 # last line has a single char
                 continue
@@ -650,18 +658,14 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
                           % (input_filename, i_line + 1, len(line), key_end))
                 sys.exit(1)
 
-            try:
-                last_name = error_if_match(line[40:50].strip(), "[^A-Z ]", 40, "Last Name", 1)
-                first_initial = error_if_match(line[50:51].strip(), "[^A-Z]", 50, "First Initial", 1)
-                student_number = error_if_match(line[51:60].strip(), "[^0-9]", 51, "Student Number", 9)
-                section = error_if_match(line[60:63].strip(), "[^0-9]", 60, "Section", 0)
-                network_id = error_if_match(line[63:71].strip(), "[^A-Z0-9]", 63, "Network ID", 1)
-                test_form = error_if_match(line[71:71].strip(), "[^A-Z]", 71, "Test Form", 0)
-                answers = error_if_match(line[72:72 + N_Q], "[^0-9]", 72, "Answers", 0)
-                key = error_if_match(line[key_start:key_end], "[^0-9]", key_start, "Key", key_length)
-            except Exception as e:
-                print("%s:%d: ERROR: %s" % (input_filename, i_line + 1, e))
-                sys.exit(1)
+            last_name = check_match(line[40:50].strip(), "[^A-Z ]", 40, "Last Name", 1)
+            first_initial = check_match(line[50:51].strip(), "[^A-Z]", 50, "First Initial", 1)
+            student_number = check_match(line[51:60].strip(), "[^0-9]", 51, "Student Number", 9)
+            section = check_match(line[60:63].strip(), "[^0-9]", 60, "Section", 0)
+            network_id = check_match(line[63:71].strip(), "[^A-Z0-9]", 63, "Network ID", 1)
+            test_form = check_match(line[71:71].strip(), "[^A-Z]", 71, "Test Form", 0)
+            answers = check_match(line[72:72 + N_Q], "[^0-9 ]", 72, "Answers", 0)
+            key = check_match(line[key_start:key_end], "[^0-9]", key_start, "Key", key_length)
 
             answers = ["*" if c == " " else ind2chr(int(c) - 1)
                        for c in answers]
