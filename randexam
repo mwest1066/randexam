@@ -749,18 +749,20 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
     P_sQ = np.zeros((N_s, N_Q))
     P_s = np.zeros(N_s)
     for si in range(N_s):
-        P_s[si] = P_se[si,e[si]]
-        for qi in range(N_Q):
-            ei = e[si]
-            Qi = Q[ei,qi]
-            if ei >= 0 and Qi >= 0:
-                P_sq[si,qi] = P_seq[si,ei,qi]
-                P_sQ[si,Qi] = P_seq[si,ei,qi]
+        ei = e[si]
+        if ei >= 0:
+            P_s[si] = P_se[si,ei]
+            for qi in range(N_Q):
+                Qi = Q[ei,qi]
+                if ei >= 0 and Qi >= 0:
+                    P_sq[si,qi] = P_seq[si,ei,qi]
+                    P_sQ[si,Qi] = P_seq[si,ei,qi]
 
     if warnings:
         for si in range(N_s):
             best_e = P_se[si,:].argmax()
-            if e[si] < 0:
+            ei = e[si]
+            if ei < 0:
                 if P_se[si,best_e] > 0:
                     print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %f points"
                           % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
@@ -768,9 +770,9 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
                     print("WARNING: %s/%s/%s/%s: invalid key, no match gives any points"
                           % (u[si,0], u[si,1], u[si,2], u[si,3]))
             else:
-                if P_se[si,best_e] > P_se[si,e[si]]:
+                if P_se[si,best_e] > P_se[si,ei]:
                     print("WARNING: %s/%s/%s/%s got %f points with valid key %s, but best match is %s with %f points"
-                          % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,e[si]], K[e[si]], K[best_e], P_se[si,best_e]))
+                          % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e], P_se[si,best_e]))
 
     return (P_seq, P_se, P_sq, P_s, P_sQ)
 
@@ -944,7 +946,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     n_ai_ss_threshold = 2
     for si in range(N_s):
         for sj in range(si):
-            if e[si] == e[sj] and e[si] >= 0 \
+            if e[si] >= 0 and e[si] == e[sj] \
                     and r_ai_ss[si,sj] > r_ai_ss_threshold \
                     and n_ai_ss[si,sj] > n_ai_ss_threshold:
                 print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
