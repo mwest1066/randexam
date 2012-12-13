@@ -1,6 +1,12 @@
 
 .PHONY: all
-all: pipeline.pdf
+all: randexam.pdf
+
+randexam.pdf: pipeline.pdf
+
+%.pdf: %.tex
+	pdflatex $<
+	pdflatex $<
 
 %.png: %.pdf
 	convert -density 130 $< $@
@@ -12,4 +18,4 @@ all: pipeline.pdf
 	epstopdf $<
 
 clean:
-	rm -rf pipeline.pdf pipeline.png
+	rm -f pipeline.{pdf,png,eps} randexam.{pdf,aux,log}
