@@ -665,7 +665,7 @@ def write_answers(output_filename, u, k, a):
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "k(s)"]
                         + ["a(s,q=%d)" % (q + 1) for q in range(N_Q)])
         for si in range(N_s):
-            writer.writerow([u[si,0], u[si,1], u[si,2], u[si,3], k[si]]
+            writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], k[si]]
                             + [a[si,qi] for qi in range(N_Q)])
 
 def read_answers(input_filename):
@@ -677,12 +677,12 @@ def read_answers(input_filename):
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
                 continue # skip header
-            if len(row) < 5:
-                print("%s:%d: ERROR: expected at least 5 items in row, got %d"
+            if len(row) < 6:
+                print("%s:%d: ERROR: expected at least 6 items in row, got %d"
                       (input_filename, i_row + 1, len(row)))
-            u_data.append(row[0:4])
-            k_data.append(row[4])
-            a_data.append(row[5:])
+            u_data.append(row[1:5])
+            k_data.append(row[5])
+            a_data.append(row[6:])
     u = np.array(u_data, dtype=object)
     k = np.array(k_data, dtype=object)
     a = np.array(a_data, dtype=str)
