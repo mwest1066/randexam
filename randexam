@@ -47,7 +47,7 @@ def main():
         (P, C) = extract_points(library, N_A)
         write_points(POINTS_FILENAME, P)
         (K, Q, V, A) = generate_specs(library, N_e, N_A)
-        check_keys(K)
+        check_key_distances(K)
         write_specs(SPECS_FILENAME, K, Q, V, A)
         write_exams(EXAMS_FILENAME, library, K, Q, V, A)
         write_solutions(SOLUTIONS_FILENAME, library, K, Q, V, C)
@@ -522,7 +522,7 @@ def hamming_distance(Ki, Kj):
     different_indexes = [i for i in range(len(Ki)) if Ki[i] != Kj[i]]
     return len(different_indexes)
 
-def check_keys(K):
+def check_key_distances(K):
     """Checks that the keys are all distinct and prints the
     minimum Hamming distance between keys.
     """
