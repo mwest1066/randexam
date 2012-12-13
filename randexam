@@ -358,7 +358,7 @@ def write_points(output_filename, P):
     (N_Q, N_V, N_A) = P.shape
     with open(output_filename, 'w') as out_f:
         writer = csv.writer(out_f)
-        writer.writerow(["Q", "V", "A", "P"])
+        writer.writerow(["Q", "V", "A", "P(Q,V,A)"])
         for Qi in range(N_Q):
             for Vi in range(N_V):
                 for Ai in range(N_A):
