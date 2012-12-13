@@ -737,9 +737,9 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
     P_s = np.zeros(N_s)
     for si in range(N_s):
         P_s[si] = P_se[si,e[si]]
-        for q in range(N_Q):
-            P_sq[s,q] = P_seq[s,e[s],q]
-            P_sQ[s,Q[e[s],q]] = P_seq[s,e[s],q]
+        for qi in range(N_Q):
+            P_sq[si,qi] = P_seq[si,e[si],qi]
+            P_sQ[si,Q[e[si],qi]] = P_seq[si,e[si],qi]
 
     if warnings:
         for si in range(N_s):
@@ -761,7 +761,7 @@ def write_grades(output_filename, u, P_s):
         writer = csv.writer(out_f)
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "P_s(s)"])
         for si in range(N_s):
-            writer.writerow([s, u[s,0], u[s,1], u[s,2], u[s,3], Ps[s]])
+            writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], P_s[si]])
 
 def write_csv(output_filename, headers, data, index_formats=None):
     """Write the given array as a CSV file.
@@ -811,7 +811,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     n_s_e = np.zeros(N_e, dtype=int)
     for ei in range(N_e):
         for si in range(N_s):
-            if K(ei) == k(si):
+            if K[ei] == k[si]:
                 n_s_e[ei] += 1
     write_csv(output_prefix + "_n_s_e.csv", ["e", "n_s(e)"], n_s_e)
 
