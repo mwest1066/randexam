@@ -123,12 +123,23 @@ class ReadState:
 ######################################################################
 
 def ind2chr(index):
+    """c = ind2chr(i)
+
+    Convert the index i to a character c, so that 0 -> 'A', 1 -> 'B',
+    etc. Invalid indexes convert to the character '*'.
+    """
     index = int(index)
     if index < 0 or index >= len(string.ascii_uppercase):
         return "*"
     return string.ascii_uppercase[index]
 
 def chr2ind(char):
+    """i = ind2chr(c)
+
+    Convert the character c to an index i, so that 'A' -> 0, 'B' -> 1,
+    etc. Uppercase and lowercase are both converted. Invalid
+    characters convert to -1.
+    """
     if char in string.ascii_uppercase:
         return string.ascii_uppercase.index(char)
     if char in string.ascii_lowercase:
