@@ -675,7 +675,7 @@ def read_answers(input_filename):
 ######################################################################
 ######################################################################
 
-def keys_to_exams(K, k):
+def keys_to_exams(K, k, u):
     N_s = k.shape[0]
     e = np.zeros(N_s, dtype=int)
     for si in range(N_s):
@@ -692,7 +692,7 @@ def generate_grades(P, K, Q, V, A, u, k, a):
     N_s = u.shape[0]
     N_e = K.shape[0]
 
-    e = keys_to_exams(K, k)
+    e = keys_to_exams(K, k, u)
 
     P_seq = np.zeros((N_s, N_e, N_Q))
     for si in range(N_s):
@@ -774,7 +774,7 @@ def write_csv(output_filename, headers, data, index_formats=None):
 def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
-    e = keys_to_exams(K, k)
+    e = keys_to_exams(K, k, u)
 
     n_s_e = np.zeros(N_e, dtype=int)
     for ei in range(N_e):
