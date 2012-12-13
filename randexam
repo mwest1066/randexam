@@ -60,8 +60,8 @@ def main():
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         (u, k, a) = read_answers(ANSWERS_FILENAME)
         P = read_points(POINTS_FILENAME)
-        check_all_keys(P, K, Q, V, A, u, k, a)
-        grade_and_write_answers(GRADES_FILENAME, P, K, Q, V, A, u, k, a)
+        (P_seq, P_se, P_sq, P_s, P_sQ) = generate_grades(P, K, Q, V, A, u, k, a, warnings=True)
+        write_grades(GRADES_FILENAME, u, P_s)
         generate_and_write_statistics(STATS_PREFIX, P, K, Q, V, A, u, k, a)
     else:
         print("ERROR: unrecognized command: %s" % sys.argv[1])
