@@ -471,12 +471,12 @@ def read_specs(input_filename):
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
                 continue # skip header
-            if (len(row) - 1) % 3 != 0:
-                print("%s:%d: ERROR: expected 3N+1 items in row, got %d"
+            if (len(row) - 2) % 3 != 0:
+                print("%s:%d: ERROR: expected 3N+2 items in row, got %d"
                       % (input_filename, i_row + 1, len(row)))
                 sys.exit(1)
-            K_data.append(row[0])
-            data = np.array(row[1:], dtype=object).reshape((-1, 3))
+            K_data.append(row[1])
+            data = np.array(row[2:], dtype=object).reshape((-1, 3))
             Q_data.append([int(d) - 1 for d in data[:,0]])
             V_data.append([int(d) - 1 for d in data[:,1]])
             A_data.append([list(d) for d in data[:,2]])
