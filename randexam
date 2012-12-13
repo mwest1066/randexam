@@ -382,16 +382,21 @@ def read_points(input_filename):
     P_data = []
     with open(input_filename, "r") as in_f:
         reader = csv.reader(in_f)
-        for (i_row, row) in enumerate(in_f):
+        for (i_row, row) in enumerate(reader):
             if i_row == 0:
                 continue # skip header
             if len(row) != 4:
                 print("%s:%d: ERROR: expected 4 entries but got %d"
-                      % (input_filename, i_line + 1, len(row)))
-            Q_data.append(int(row[0]) - 1)
-            V_data.append(int(row[1]) - 1)
-            A_data.append(chr2ind(row[2]))
-            P_data.append(float(row[3]))
+                      % (input_filename, i_row + 1, len(row)))
+                sys.exit(1)
+            try:
+                Q_data.append(int(row[0]) - 1)
+                V_data.append(int(row[1]) - 1)
+                A_data.append(chr2ind(row[2]))
+                P_data.append(float(row[3]))
+            except Exception as e:
+                print("%s:%s: ERROR: %s" % (input_filename, i_row + 1, e))
+                sys.exit(1)
     N_Q = max(Q_data) + 1
     N_V = max(V_data) + 1
     N_A = max(A_data) + 1
