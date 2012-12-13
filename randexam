@@ -718,12 +718,12 @@ def keys_to_exams(K, k, u):
     N_s = k.shape[0]
     e = np.zeros(N_s, dtype=int)
     for si in range(N_s):
-        if k[si] not in K:
-            print("WARNING: key %s for student %s/%s/%s/%s not found"
+        if k[si] in K:
+            e[si] = np.argwhere(K == k[si])[0, 0]
+        else:
+            print("WARNING: key '%s' for student %s/%s/%s/%s not found"
                   % (k[si], u[si,0], u[si,1], u[si,2], u[si,3]))
             e[si] = -1
-        else:
-            e[si] = np.argwhere(K == k[si])[0, 0]
     return e
 
 def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
@@ -737,7 +737,12 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
     for si in range(N_s):
         for ei in range(N_e):
             for qi in range(N_Q):
-                P_seq[si,ei,qi] = P[Q[ei,qi], V[ei,qi], chr2ind(A[ei,qi,chr2ind(a[si,qi])])]
+                ai = chr2ind(a[si,qi])
+                Ai = chr2ind(A[ei,qi,ai])
+                Qi = Q[ei,qi]
+                Vi = V[ei,qi]
+                if ai >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
+                    P_seq[si,ei,qi] = P[Qi, Vi, Ai]
     P_se = P_seq.sum(axis=2)
     
     P_sq = np.zeros((N_s, N_Q))
@@ -746,18 +751,25 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
     for si in range(N_s):
         P_s[si] = P_se[si,e[si]]
         for qi in range(N_Q):
-            P_sq[si,qi] = P_seq[si,e[si],qi]
-            P_sQ[si,Q[e[si],qi]] = P_seq[si,e[si],qi]
+            ei = e[si]
+            Qi = Q[ei,qi]
+            if ei >= 0 and Qi >= 0:
+                P_sq[si,qi] = P_seq[si,ei,qi]
+                P_sQ[si,Qi] = P_seq[si,ei,qi]
 
     if warnings:
         for si in range(N_s):
             best_e = P_se[si,:].argmax()
             if e[si] < 0:
-                print("%s/%s/%s/%s: no valid key, best match is %s with %f points"
-                      % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
+                if P_se[si,best_e] > 0:
+                    print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %f points"
+                          % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
+                else:
+                    print("WARNING: %s/%s/%s/%s: invalid key, no match gives any points"
+                          % (u[si,0], u[si,1], u[si,2], u[si,3]))
             else:
                 if P_se[si,best_e] > P_se[si,e[si]]:
-                    print("%s/%s/%s/%s got %f points with valid key %s, but best match is %s with %f points"
+                    print("WARNING: %s/%s/%s/%s got %f points with valid key %s, but best match is %s with %f points"
                           % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,e[si]], K[e[si]], K[best_e], P_se[si,best_e]))
 
     return (P_seq, P_se, P_sq, P_s, P_sQ)
@@ -840,15 +852,23 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     n_s_QV = np.zeros((N_Q, N_V), dtype=int)
     for si in range(N_s):
         for qi in range(N_Q):
-            n_s_QV[Q[e[si],qi], V[e[si],qi]] += 1
+            ei = e[si]
+            Qi = Q[ei,qi]
+            Vi = V[ei,qi]
+            if ei >= 0 and Qi >= 0 and Vi >= 0:
+                n_s_QV[Qi, Vi] += 1
     write_csv(output_prefix + "_n_s_QV.csv", ["Q", "n_s(Q,V=%d)"], n_s_QV)
 
     n_a_QVA = np.zeros((N_Q, N_V, N_A), dtype=int)
     for si in range(N_s):
         for qi in range(N_Q):
-            Ai = chr2ind(A[e[si],qi,chr2ind(a[si,qi])])
-            if Ai >= 0:
-                n_a_QVA[Q[e[si],qi], V[e[si],qi], Ai] += 1
+            ei = e[si]
+            ai = chr2ind(a[si,qi])
+            Ai = chr2ind(A[ei,qi,ai])
+            Qi = Q[ei,qi]
+            Vi = V[ei,qi]
+            if ei >= 0 and Ai >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
+                n_a_QVA[Qi, Vi, Ai] += 1
     write_csv(output_prefix + "_n_a_QVA.csv", ["Q", "V", "n_a(Q,V,A=%s)"], n_a_QVA,
               index_formats=['i', 'i', 'c'])
 
@@ -863,7 +883,11 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     P_QV = np.zeros((N_Q, N_V))
     for si in range(N_s):
         for qi in range(N_Q):
-            P_QV[Q[e[si],qi], V[e[si],qi]] += P_sq[si,qi]
+            ei = e[si]
+            Qi = Q[ei,qi]
+            Vi = V[ei,qi]
+            if ei >= 0 and Qi >= 0 and Vi >= 0:
+                P_QV[Qi, Vi] += P_sq[si,qi]
     write_csv(output_prefix + "_P_QV.csv", ["Q", "P(Q,V=%d)"], P_QV)
 
     P_Q = P_QV.sum(axis=1)
@@ -913,16 +937,18 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             for qi in range(N_Q):
                 if P_sq[si,qi] == 0 and P_sq[sj,qi] == 0 and a[si,qi] == a[sj,qi]:
                     r_ai_ss[si,sj] += 1
-    r_ai_ss /= n_ai_ss
+    r_ai_ss /= np.where(n_ai_ss > 0, n_ai_ss, 1)
     write_csv(output_prefix + "_r_ai_ss.csv", ["s1", "r_ai(s1,s2=%d)"], r_ai_ss)
     
     r_ai_ss_threshold = 2.0 / N_A
     n_ai_ss_threshold = 2
     for si in range(N_s):
         for sj in range(si):
-            if e[si] == e[sj] and r_ai_ss[si,sj] > r_ai_ss_threshold and n_ai_ss[si,sj] > n_ai_ss_threshold:
-                print("WARNING: s1 = %d, s2 = %d, r_ai_ss = %f, n_ai_ss = %d"
-                      % (si, sj, r_ai_ss[si,sj], n_ai_ss[si,sj]))
+            if e[si] == e[sj] and e[si] >= 0 \
+                    and r_ai_ss[si,sj] > r_ai_ss_threshold \
+                    and n_ai_ss[si,sj] > n_ai_ss_threshold:
+                print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
+                      % (si, sj, r_ai_ss[si,sj], si, sj, n_ai_ss[si,sj]))
 
 ######################################################################
 ######################################################################
