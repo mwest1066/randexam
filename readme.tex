@@ -343,8 +343,10 @@ variants. Basic statistics for this assessment are listed below.
     & correlation between student scores on questions $Q$ and $\hat{Q}$ \\
     $r^{\rm Q}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
     & correlation between question points for students $s$ and $\hat{s}$ \\
-    $r^{\rm a}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
-    & proportion of identical exam answers for students $s$ and $\hat{s}$
+    $n^{\rm ai}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
+    & number of mutually incorrect exam answers for students $s$ and $\hat{s}$ \\
+    $r^{\rm ai}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
+    & proportion of identical incorrect answers for students $s$ and $\hat{s}$
   \end{tabular}
 \end{center}
 These quantities are computed by:
@@ -376,17 +378,21 @@ These quantities are computed by:
   }{
     \sqrt{\sum_{Q=1}^{N_{\rm Q}} (P_{sQ}(s,Q) - \bar{P}_Q(Q))^2}
     \sqrt{\sum_{Q=1}^{N_{\rm Q}} (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))^2}} \displaybreak[0] \\
-  r^{\rm a}_{\rm ss}(s,\hat{s}) &= \frac{1}{N_Q} \sum_{q = 1}^{N_{\rm Q}}
+  n^{\rm ai}_{\rm ss}(s,\hat{s}) &= \sum_{q = 1}^{N_{\rm Q}} \delta\big(0, P_{\rm sq}(s,q)\big)
+  \ \delta\big(0, P_{\rm sq}(\hat{s},q)\big) \displaybreak[0] \\
+  r^{\rm ai}_{\rm ss}(s,\hat{s}) &= \frac{1}{n^{\rm ai}_{\rm ss}(s,\hat{s})} \sum_{q = 1}^{N_{\rm Q}}
   \delta\big(a(s,q), a(\hat{s},q)\big)
+  \ \delta\big(0, P_{\rm sq}(s,q)\big) \ \delta\big(0, P_{\rm sq}(\hat{s},q)\big)
 \end{align}
 where $\delta(x,y)$ is the Kronecker delta function, equal to one with
 equal arguments and zero otherwise.
 
 We expect that $R_{\rm QV}(Q,V) \approx 1$, indicating that all
 variants were equally difficult for question $Q$. We also expect that
-$r^{\rm a}_{\rm ss}(s,\hat{s}) \approx 1/N_{\rm A}$ for $e(s) \ne
-e(\hat{s})$, indicating only random association between the exam
-answers given by students with distinct exams.
+$r^{\rm ai}_{\rm ss}(s,\hat{s}) \approx 1/N_{\rm A}$ for $e(s) =
+e(\hat{s})$, indicating only random association between incorrect
+answers given by students with identical exams, although this may be
+legitimately higher due to correlations between student mistakes.
 
 \section{Implementation Notes}
 

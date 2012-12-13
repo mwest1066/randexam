@@ -803,6 +803,20 @@ def write_csv(output_filename, headers, data, index_formats=None):
                     row.append(data[index + (j,)])
                 writer.writerow(row)
 
+def write_halfviz(output_filename, data, threshold):
+    """Write a graph from the given data in halfviz format.
+
+    The data array must be square and symmetric, with data[i,j] giving
+    a connection strength between i and j. The output graph has an
+    edge i-j if data[i,j] > threshold.
+    """
+    N = data.shape[0]
+    with open(output_filename, "w") as out_f:
+        for i in range(N):
+            for j in range(i):
+                if data[i,j] > threshold:
+                    out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
+
 def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
@@ -871,25 +885,36 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
 
     r_s_QQ = np.corrcoef(P_sQ.transpose())
     write_csv(output_prefix + "_r_s_QQ.csv", ["Q1", "r_s(Q1,Q2=%d)"], r_s_QQ)
+    write_halfviz(output_prefix + "_r_s_QQ.halfviz", r_s_QQ, 0.2)
 
     r_Q_ss = np.corrcoef(P_sQ)
     write_csv(output_prefix + "_r_Q_ss.csv", ["s1", "r_Q(s1,s2=%d)"], r_Q_ss)
+    write_halfviz(output_prefix + "_r_Q_ss.halfviz", r_Q_ss, 0.99)
 
-    r_a_ss = np.zeros((N_s, N_s), dtype=float)
+    n_ai_ss = np.zeros((N_s, N_s), dtype=int)
     for si in range(N_s):
         for sj in range(N_s):
             for qi in range(N_Q):
-                if a[si,qi] == a[sj,qi]:
-                    r_a_ss[si,sj] += 1
-    r_a_ss /= N_A
-    write_csv(output_prefix + "_r_a_ss.csv", ["s1", "r_a(s1,s2=%d)"], r_a_ss)
+                if P_sq[si,qi] == 0 and P_sq[sj,qi] == 0:
+                    n_ai_ss[si,sj] += 1
+    write_csv(output_prefix + "_n_ai_ss.csv", ["s1", "n_ai(s1,s2=%d)"], n_ai_ss)
+
+    r_ai_ss = np.zeros((N_s, N_s), dtype=float)
+    for si in range(N_s):
+        for sj in range(N_s):
+            for qi in range(N_Q):
+                if P_sq[si,qi] == 0 and P_sq[sj,qi] == 0 and a[si,qi] == a[sj,qi]:
+                    r_ai_ss[si,sj] += 1
+    r_ai_ss /= n_ai_ss
+    write_csv(output_prefix + "_r_ai_ss.csv", ["s1", "r_ai(s1,s2=%d)"], r_ai_ss)
     
-    r_a_ss_threshold = 2.0 / N_A
+    r_ai_ss_threshold = 2.0 / N_A
+    n_ai_ss_threshold = 2
     for si in range(N_s):
         for sj in range(si):
-            if r_a_ss[si,sj] > r_a_ss_threshold:
-                print("WARNING: r_a_ss(s1=%d,s2=%d) = %f is unusually high"
-                      % (si, sj, r_a_ss[si,sj]))
+            if e[si] == e[sj] and r_ai_ss[si,sj] > r_ai_ss_threshold and n_ai_ss[si,sj] > n_ai_ss_threshold:
+                print("WARNING: s1 = %d, s2 = %d, r_ai_ss = %f, n_ai_ss = %d"
+                      % (si, sj, r_ai_ss[si,sj], n_ai_ss[si,sj]))
 
 ######################################################################
 ######################################################################
