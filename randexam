@@ -611,7 +611,7 @@ def write_solutions(output_filename, library, K, Q, V, C):
         writer = csv.writer(out_f)
         writer.writerow(["e", "K(e)"] + ["C(e,q=%d)" % (q + 1) for q in range(N_Q)])
         for e in range(N_e):
-            writer.writerow([e, K[e]] + [C[Q[e,q], V[e,q]] for q in range(N_Q)])
+            writer.writerow([e + 1, K[e]] + [C[Q[e,q], V[e,q]] for q in range(N_Q)])
 
 ######################################################################
 ######################################################################
