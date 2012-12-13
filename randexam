@@ -41,7 +41,7 @@ def main():
         sys.exit(0)
 
     if sys.argv[1] == "proc-lib":
-        for filename in [SPECS_FILENAME, EXAMS_FILENAME, SOLUTIONS_FILENAME]:
+        for filename in [POINTS_FILENAME, SPECS_FILENAME, EXAMS_FILENAME, SOLUTIONS_FILENAME]:
             if os.path.exists(filename):
                 print("ERROR: %s already exists, will not overwrite" % filename)
                 sys.exit(1)
