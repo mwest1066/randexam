@@ -1,0 +1,32 @@
+digraph partmc_modules {
+    rankdir = TB;
+    node [fontsize = 10, height = 0.3, width = 0.5];
+    graph [nodesep = 0.2, ranksep = 0.3];
+    edge [arrowsize = 0.7];
+
+    library [label="library.tex", fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
+    scantron [label="scantron.dat", fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
+
+    students [label="students, Scantron", shape=hexagon, style=filled, fillcolor=mistyrose1];
+
+    exams [label="exams.tex", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    solutions [label="solutions.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    specs [label="specs.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    points [label="points.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    answers [label="answers.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    grades [label="grades.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    stats [label="stats_*.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+
+    proc_lib [label="randexam proc-lib", fontname=Courier, shape=ellipse, style=filled, fillcolor=cornsilk1];
+    proc_scan [label="randexam proc-scan", fontname=Courier, shape=ellipse, style=filled, fillcolor=cornsilk1];
+    proc_ans [label="randexam proc-ans", fontname=Courier, shape=ellipse, style=filled, fillcolor=cornsilk1];
+
+    library -> proc_lib
+    proc_lib -> { solutions; exams; specs; points }
+    exams -> students
+    students -> scantron
+    { scantron; specs } -> proc_scan
+    proc_scan -> answers
+    { specs ; answers; points } -> proc_ans
+    proc_ans -> { grades; stats }
+}

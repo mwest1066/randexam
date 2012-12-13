@@ -1,0 +1,474 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=3cm]{geometry}
+\usepackage{graphicx}
+
+\begin{document}
+
+\title{Randomized Exam Generation and Grading}
+\author{Matt West}
+\date{\today}
+\maketitle
+
+\section{Concepts}
+
+The exam \emph{library} contains $N_{\rm Q}$ \emph{questions}, each
+with up to $N_{\rm V}$ \emph{variants}. Each question variant contains
+up to $N_{\rm A}$ \emph{answers}, exactly one of which must be the
+\emph{correct answer}. The correct answer for variant $V$ of question
+$Q$ is denoted $C(Q,V)$. The questions within the library are grouped
+into \emph{zones}.
+
+We randomly generate $N_{\rm e}$ \emph{exams}. Each exam contains
+exactly one randomly chosen variant of each library question, with the
+question order randomly permuted within each zone. The order of the
+zones is not permuted. Questions are numbered globally with the
+library and exams, not per-zone. Question $q$ on exam $e$ thus
+corresponds to variant $V(e,q)$ of question $Q(e,q)$ in the
+library. The answer order for each exam question is also a random
+permutation of the original answer order, so $A(e,q,a)$ is the library
+answer corresponding to exam answer $a$.
+
+We use capital letters for variables for quantities within the library
+and small letters for quantities within the randomly generated
+exams. Exams, questions, variants, and students are all numbered with
+Arabic numerals starting from 1. Answers are numbered with roman
+letters starting from A.
+
+Each randomly generated exam is identified by a \emph{key} $K(e)$ of
+length $N_{\rm K}$, which is a sequence of answers
+$K_1,\ldots,K_{N_K}$. The keys are encoded on the Scantron forms as
+the answers to the final set of questions. For example, on a
+96-question Scantron form, the 4-digit key ``ECEA'' is encoded as the
+answers (93) E, (94) C, (95) E, and (96) A.
+
+During the exam each student completes a single Scantron form,
+resulting in $N_{\rm s}$ Scantron forms for an equal number of
+students. These forms are scanned and the raw data can be processed to
+derive the points for each student.
+
+In summary, the size variables used are:
+\begin{center}
+  \begin{tabular}{ll}
+    $N_{\rm Q}$ & number of questions (in the library and on each exam) \\
+    $N_{\rm e}$ & number of exams \\
+    $N_{\rm A}$ & maximum number of answers per question \\
+    $N_{\rm V}$ & maximum number of variants per question \\
+    $N_{\rm s}$ & number of students (equal to the number of Scantron forms) \\
+    $N_{\rm D}$ & number of answer-digits required to encode the exam number \\
+    $N_{\rm K}$ & number of answer-digits in the exam key
+  \end{tabular}
+\end{center}
+
+\section{Processing pipeline}
+
+The full processing pipeline for making, using, and grading a
+randomized exam is shown in Figure~\ref{fig:pipeline}. The purple
+output files can be inspected and hand-edited before processing runs
+to control the processing pipeline.
+
+\begin{figure}
+  \centering
+  \includegraphics{pipeline}
+  \caption{The pipeline for making and grading the randomized
+    exams. The green pentagons are input files that require human
+    effort to generate, the purple boxes are output files, the yellow
+    ellipses are program runs, and the pink hexagon is the students
+    sitting the exam and the scanning of the Scantron forms.}
+  \label{fig:pipeline}
+\end{figure}
+
+\section{File formats}
+
+All library and exam question are formatted in single TeX files. All
+data is stored in CSV (comma-separated values) files for easy editing
+by hand in a spreadsheet or text editor.
+
+\subsection{\texttt{library.tex}}
+
+The \verb+library_template.tex+ file should be copied to
+\verb+library.tex+ and edited to fill in the questions. Non-comment
+text may only go into the locations indicated in the file.
+
+\subsection{\texttt{exams.tex}}
+
+This is the generated file containing all of the randomized
+exams. Each coverpage ends with the exam key that needs to be filled
+in by the student.
+
+\subsection{\texttt{specs.csv}}
+
+This file encodes the arrays:
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $K(e)$ & $N_{\rm e}$ & key for exam $e$ \\
+    $Q(e,q)$ & $N_{\rm e} \times N_{\rm Q}$
+    & library question for question $q$ on exam $e$ \\
+    $V(e,q)$ & $N_{\rm e} \times N_{\rm Q}$
+    & library question variant for question $q$ on exam $e$ \\
+    $A(e,q,a)$ & $N_{\rm e} \times N_{\rm Q} \times N_{\rm A}$
+    & library answer corresponding to answer $a$ for question $q$ on exam $e$
+  \end{tabular}
+\end{center}
+The first column is the exam key, then triples of columns identify the
+library question $Q$, variant $V$, and library answer order. As an
+example:
+\begin{verbatim}
+Key,Q1,V1,A1,Q2,V2,A2,Q3,V3,A3
+AADC,2,2,DEBCA,3,2,DCEBA,1,2,CBDAE
+BAED,1,2,BDCAE,2,1,DECBA,3,2,CAEBD
+\end{verbatim}
+Here the key of the first exam is $K(1) = {\rm AADC}$ and the second
+question on this exam is variant $V(1,2) = 2$ of library question
+$Q(1,2) = 3$. The first answer on the exam paper is answer
+$A(1,2,1) = \rm D$ from the library question, while the
+second answer on the exam paper is answer $A(1,2,2) = \rm C$ from the
+library question.
+
+\subsection{\texttt{points.csv}}
+
+The points file encodes the array:
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $P(Q,V,A)$ & $N_{\rm Q} \times N_{\rm V} \times N_{\rm A}$
+    & points awarded for giving answer $A$ to variant $V$ of question $Q$
+  \end{tabular}
+\end{center}
+This is stored as a four-column file with entries like:
+\begin{verbatim}
+Q,V,A,P
+...
+2,1,A,0.0
+2,1,B,0.0
+2,1,C,0.0
+2,1,D,1.0
+2,1,E,0.0
+\end{verbatim}
+Here some lines have been removed, as indicated by the ellipsis. This
+shows that for variant 1 of question 2, answer D is worth 1
+point and all other answers are not worth any points, so
+$P(2,1,4) = 1.0$ and $P(2,1,A) = 0$ for $A \ne 4$.
+
+\subsection{\texttt{solutions.csv}}
+
+This file gives the correct solutions for each exam in case grading by
+hand is necessary. This thus encodes the array:
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $c(e,q)$ & $N_{\rm e} \times N_{\rm Q}$
+    & the correct answer for question $q$ on exam $e$
+  \end{tabular}
+\end{center}
+The first column gives the exam key for reference, and then subsequent
+columns give the correct answers. For example:
+\begin{verbatim}
+Key,C1,C2,C3
+AADC,A,A,D
+BAED,D,A,A
+CAAE,A,E,D
+\end{verbatim}
+Here the third exam has key $K(3) = \rm CAAE$ and the correct
+answer for the first question is $c(3,1) = \rm A$, while the correct
+answer for the second question is $c(3,2) = E$, etc.
+
+The correct answers each exam are derived from the correct answers in
+the library file, given for each library question and each variant in
+the array:
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $C(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
+    & the correct answer for variant $V$ of library question $Q$
+  \end{tabular}
+\end{center}
+The derivation of $c(e,q)$ is then:
+\begin{equation}
+  A(e,q,c(e,q)) = C\big( Q(e,q), V(e,q) \big).
+\end{equation}
+
+\subsection{\texttt{scantron.dat}}
+
+This is the raw data file from the Scantron machine. It contains lines
+like:
+\begin{verbatim}
+721000001001120412001Y  5380     1    N DEVILLE   R993502067   RDEVILLE 434
+721000002001120412001Y  5380     1    N WEST      M795969582   MWEST    252
+\end{verbatim}
+The actual files send from the scanning office should be renamed to
+\verb+scantron.dat+.
+
+\subsection{\texttt{answers.csv}}
+
+This file is essentially just a CSV version of the data in
+\verb+scantron.dat+. It encodes the arrays:
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $u(s,i)$ & $N_{\rm s} \times 4$
+    & student last name, first initial, student ID number, and NetID \\
+    $a(s,q)$ & $N_{\rm s} \times N_{\rm Q}$
+    & answer given to question $q$ by student $s$ \\
+    $k(s)$ & $N_{\rm s}$
+    & key filled in by student $s$
+  \end{tabular}
+\end{center}
+The first four columns in the data file store the student information,
+the fifth column stores the exam key, and then columns 6 and up store
+the answers to the questions in exam order. As an example:
+\begin{verbatim}
+Name,Initial,Number,NetID,Key,a1,a2,a3
+DEVILLE,R,993502067,RDEVILLE,ACAB,D,C,D
+WEST,M,795969582,MWEST,BEDB,B,E,B
+\end{verbatim}
+Here we see the second student has information giving the last name
+$u(2,1) = \mathtt{WEST}$, the first initial $u(2,2) = \mathtt{M}$, the
+student number $u(2,3) = 795969582$, and the NetID $u(2,4) =
+\texttt{MWEST}$. The exam key for this student is $k(2) = \rm BEDB$
+and the student gave answer $a(2,1) = \rm B$ for question 1 on this
+exam paper, answer $a(2,2) = \rm E$ for question 2, etc.
+
+\subsection{\texttt{grades.csv}}
+
+This file encodes the array $P_{\rm se}(s)$ described in
+Section~\ref{sec:grading}. For reference, the student information in
+array $u(s,i)$ is also included in the first columns. As an example:
+\begin{verbatim}
+Name,Initial,Number,NetID,Points
+DEVILLE,R,993502067,RDEVILLE,2.0
+WEST,M,795969582,MWEST,2.0
+\end{verbatim}
+Here we see that both students have total points $P_{\rm se}(1) =
+P_{\rm se}(2) = 2.0$.
+
+\subsection{\texttt{stats\underline{ }*.csv}}
+
+Multiple files are written to encode the statistics arrays described
+in Section~\ref{sec:statistics}. These are named after the variables
+they contain, so $n^{\rm a}_{\rm QV}$ is be stored in
+\verb+stats_n_a_QV.csv+, for example. The format is broadly similar to
+those files described in detail above, with column headings that
+specify the contents.
+
+\section{Grading}
+\label{sec:grading}
+
+The map from student number $s$ to exam number $e$ is given by the
+array
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $e(s)$ & $N_{\rm s}$ & exam number corresponding to student number $s$
+  \end{tabular}
+\end{center}
+This array is determined so that
+\begin{equation}
+  K(e(s)) = k(s).
+\end{equation}
+
+The points awarded to each student can be determined using the grading
+key for any exam, not just the particular exam that the student
+actually took. To make this clear, we consider the arrays
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $P_{\rm seq}(s,e,q)$ & $N_{\rm s} \times N_{\rm e} \times N_{\rm Q}$
+    & points awarded to student $s$ on question $q$ graded for exam $e$ \\
+    $P_{\rm se}(s,e)$ & $N_{\rm s} \times N_{\rm e}$
+    & total points awarded to student $s$ graded for exam $e$ \\
+    $P_{\rm sq}(s,q)$ & $N_{\rm s} \times N_{\rm Q}$
+    & points award to student $s$ on question $q$ using the correct exam \\
+    $P_{\rm s}(s)$ & $N_{\rm s}$
+    & total points awarded to student $s$ graded using the correct exam \\
+    $P_{sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
+    & points awarded to student $s$ for library question $Q$ \\
+  \end{tabular}
+\end{center}
+These quantities are computed by:
+\begin{align}
+  P_{\rm seq}(s,e,q) &= P\Big(Q(e,q), V(e,q), A\big(e,q,a(s,q)\big)\Big) \\
+  P_{\rm se}(s,e) &= \sum_{q = 1}^{N_{\rm Q}} P_{\rm seq}(s,e,q) \\
+  P_{\rm sq}(s,q) &= P_{\rm seq}(s,e(s),q) \\
+  P_{\rm s}(s) &= P_{\rm se}(s,e(s)) \\
+  P_{\rm sQ}(s,Q(e(s),q)) &= P_{\rm seq}(s,e(s),q).
+\end{align}
+We expect that $e(s)$ maximizes $P_{\rm se}(s,e)$ for each $s$, as
+grading with the ``wrong'' exam key should give random choices for
+each answer. Indeed, for $\hat{e} \ne e(s)$, $P_{\rm se}(s,\hat{e})$
+should be approximately $N_{\rm Q} / N_{\rm A}$, assuming that each
+question is worth one point if correct. Some significant deviations
+are likely, however, when the number of students $N_{\rm s}$ much
+larger than the number of questions $N_{\rm Q}$.
+
+\section{Statistics}
+\label{sec:statistics}
+
+As well as computing the scores for each student, we can assess how
+the students as a group performed on the different questions and
+variants. Basic statistics for this assessment are listed below.
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $n^{\rm s}_{\rm e}(e)$ & $N_{\rm e}$
+    & number of students taking exam $e$ \\
+    $n^{\rm s}_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
+    & number of students given variant $V$ of question $Q$ \\
+    $n^{\rm a}_{\rm QVA}(Q,V,A)$ & $N_{\rm Q} \times N_{\rm V} \times N_{\rm A}$
+    & number of students giving answer $A$ for variant $V$ of question $Q$ \\
+    $n^{\rm a}_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
+    & number of students giving an answer for variant $V$ of question $Q$ \\
+    $n^{\rm a}_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & number of students giving an answer for question $Q$ \\
+    $P_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
+    & total points awarded for variant $V$ of question $Q$ \\
+    $P_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & total points awarded for question $Q$ \\
+    $\bar{P}_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
+    & average points per student for variant $V$ of question $Q$ \\
+    $\bar{P}_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & average points per student for question $Q$ \\
+    $R_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
+    & ratio of average points for variant $V$ to average for question $Q$ \\
+    $r^{\rm s}_{QQ}(Q,\hat{Q})$ & $N_{\rm Q} \times N_{\rm Q}$
+    & correlation between student scores on questions $Q$ and $\hat{Q}$ \\
+    $r^{\rm Q}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
+    & correlation between question points for students $s$ and $\hat{s}$ \\
+    $r^{\rm a}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
+    & proportion of identical exam answers for students $s$ and $\hat{s}$
+  \end{tabular}
+\end{center}
+These quantities are computed by:
+\begin{align}
+  n^{\rm s}_{\rm e}(e) &= \sum_{s = 1}^{N_{\rm s}} \delta\big(K(e), k(s)\big) \displaybreak[0] \\
+  n^{\rm s}_{\rm QV}(\hat{Q},\hat{V}) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{\rm N_{\rm Q}}
+  \delta\Big(\hat{Q}, Q\big(e(s),q\big)\Big)
+  \ \delta\Big(\hat{V}, V\big(e(s),q\big)\Big) \displaybreak[0] \\
+  n^{\rm a}_{\rm QVA}(\hat{Q},\hat{V},\hat{A}) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{N_{\rm Q}}
+  \delta\Big( \hat{Q}, Q\big(e(s),q\big) \Big) \ \delta\Big(\hat{V}, V\big(e(s),q\big) \Big)
+  \ \delta\Big( \hat{A}, A\big(e(s),q,a(s,q)\big) \Big) \displaybreak[0] \\
+  n^{\rm a}_{\rm QV}(Q,V) &= \sum_{A = 1}^{N_{\rm A}} n^{\rm a}_{\rm QVA}(Q,V,A) \displaybreak[0] \\
+  n^{\rm a}_{\rm Q}(Q) &= \sum_{V = 1}^{N_{\rm V}} n^{\rm a}_{\rm QV}(Q,V) \displaybreak[0] \\
+  P_{\rm QV}(Q,V) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{N_{\rm Q}}
+  P_{\rm sq}(s,q)
+  \ \delta\Big(\hat{Q}, Q\big(e(s),q\big)\Big)
+  \ \delta\Big(\hat{V}, V\big(e(s),q\big)\Big) \displaybreak[0] \\
+  P_{\rm Q}(Q) &= \sum_{V = 1}^{N_{\rm V}} P_{\rm QV}(Q,V) \displaybreak[0] \\
+  \bar{P}_{\rm QV}(Q,V) &= \frac{P_{\rm QV}(Q,V)}{n^{\rm s}_{\rm QV}(Q,V)} \displaybreak[0] \\
+  \bar{P}_{\rm Q}(Q) &= \frac{P_{\rm Q}(Q)}{N_{\rm s}} \displaybreak[0] \\
+  R_{\rm QV}(Q,V) &= \frac{\bar{P}_{\rm QV}(Q,V)}{\bar{P}_{\rm Q}(Q)} \displaybreak[0] \\
+  r^{\rm s}_{\rm QQ}(Q, \hat{Q}) &= \frac{\sum_{s=1}^{N_{\rm s}}
+    (P_{sQ}(s,Q) - \bar{P}_Q(Q)) (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))
+  }{
+    \sqrt{\sum_{s=1}^{N_{\rm s}} (P_{sQ}(s,Q) - \bar{P}_Q(Q))^2}
+    \sqrt{\sum_{s=1}^{N_{\rm s}} (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))^2}} \displaybreak[0] \\
+  r^{\rm Q}_{\rm s}(s, \hat{s}) &= \frac{\sum_{Q=1}^{N_{\rm Q}}
+    (P_{sQ}(s,Q) - \bar{P}_Q(Q)) (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))
+  }{
+    \sqrt{\sum_{Q=1}^{N_{\rm Q}} (P_{sQ}(s,Q) - \bar{P}_Q(Q))^2}
+    \sqrt{\sum_{Q=1}^{N_{\rm Q}} (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))^2}} \displaybreak[0] \\
+  r^{\rm a}_{\rm ss}(s,\hat{s}) &= \frac{1}{N_Q} \sum_{q = 1}^{N_{\rm Q}}
+  \delta\big(a(s,q), a(\hat{s},q)\big)
+\end{align}
+where $\delta(x,y)$ is the Kronecker delta function, equal to one with
+equal arguments and zero otherwise.
+
+We expect that $R_{\rm QV}(Q,V) \approx 1$, indicating that all
+variants were equally difficult for question $Q$. We also expect that
+$r^{\rm a}_{\rm ss}(s,\hat{s}) \approx 1/N_{\rm A}$ for $e(s) \ne
+e(\hat{s})$, indicating only random association between the exam
+answers given by students with distinct exams.
+
+\section{Implementation Notes}
+
+The randomized exam procedure described in this document is
+implemented in the \texttt{randexam} Python script. The configuration
+section at the top of the file should be edited as appropriate.
+
+The internal variables in the script follow the notation in this
+document and use \texttt{numpy} for array handling. The only
+significant departure is that all variables are numbered from zero
+rather than from one, as Python uses zero-indexed arrays. The
+conversion between one-based and zero-based quantities occurs during
+reading and writing. All internal variables and computations are
+zero-based.
+
+In this document overloaded notation is used for index variables and
+arrays, so that we write both $Q(e,q)$ and $C(Q,V)$, where $Q$ is
+understood to be a dummy variable in the latter expression. In the
+code, plain variable names like \texttt{Q} refer to the array and
+names like \texttt{Qi} and \texttt{Qj} are used for dummy index
+variables.
+
+All variables that represent answers are string-valued and store
+values A, B, etc, rather than an integer. These correspond to indexes
+$\rm A \leftrightarrow 0$, $\rm B \leftrightarrow 1$, etc. To convert
+between zero-based integer indexes and string representations, the
+functions \texttt{chr2ind()} and \texttt{ind2chr()} can be used. For
+example, to access a value in the $A(e,q,a)$ array we can write:
+\begin{verbatim}
+e = 7
+q = 0
+a = "D"
+print(A(e, q, chr2ind(a)))
+\end{verbatim}
+
+\section{Key Generation}
+
+The exam keys are generated by encoding the exam number $e$ in
+base-$N_{\rm A}$ using $N_{\rm D}$ digits and then appending two or
+three checksum digits. The exam-number digits are in little-endian
+order, with least significant digit first, so for zero-based digits
+$K_i$ and zero-based indexes $i$ they are
+\begin{equation}
+  K_i = \left\lfloor \frac{e}{(N_{\rm A})^i} \right\rfloor
+  \mod N_{\rm A}, \text{ for } i = 0,\ldots,(N_{\rm D} - 1)
+\end{equation}
+The checksum digits are the \emph{parity digit} $K_{\rm P}$, a
+\emph{Fletcher-type} checksum $K_{\rm F}$, and possibly a modified
+Fletcher-type checksum $K_{\rm M}$, defined for zero-based digits
+$K_i$ and zero-based indexes $i$ by
+\begin{align}
+  K_{\rm P} &= \sum_{i=0}^{N_{\rm D} - 1} K_i \mod N_{\rm A}
+  \displaybreak[0] \\
+  K_{\rm F} &= \sum_{i=0}^{N_{\rm D} - 1} w_{{\rm F},i} K_i \mod N_{\rm A}
+  & w_{{\rm F},i} &= \Big(i\ \operatorname{mod}\ (N_A - 1)\Big) + 1
+  \displaybreak[0] \\
+  K_{\rm M} &= \sum_{i=0}^{N_{\rm D} - 1} w_{{\rm M},i} K_i \mod N_{\rm A}
+  & w_{{\rm M},i} &= \left(\left\lfloor \frac{i}{N_{\rm A} - 1}
+  \right\rfloor\, \operatorname{mod}\ (N_{\rm A} - 1)\right) + 1.
+\end{align}
+Using the first two checksum digits ensures a minimum Hamming distance
+of 3 for at most $(N_{\rm A} - 1)$ non-checksum digits (up to $N_{\rm
+  A}^{(N_{\rm A} - 1)}$ different random exams).  If more digits are
+required to encode the exam numbers then the third checksum digit is
+appended to the key, ensuring a Hamming distance of at least 3 for up
+to $(N_{\rm A} - 1)^2$ non-checksum digits, allowing up to $N_{\rm
+  A}^{(N_{\rm A} - 1)^2}$ different random exams. In the case of
+$N_{\rm A} = 5$ the key lengths are:
+\begin{center}
+  \begin{tabular}{cccc}
+    number of exams & exam-number digits $N_{\rm D}$
+    & checksum digits & key length $N_{\rm K}$ \\
+    \hline
+    5 & 1 & 2 & 3 \\
+    25 & 2 & 2 & 4 \\
+    125 & 3 & 2 & 5 \\
+    625 & 4 & 2 & 6 \\
+    3125 & 5 & 3 & 8 \\
+    15625 & 6 & 3 & 9
+  \end{tabular}
+\end{center}
+
+\end{document}
+
+\end{document}
