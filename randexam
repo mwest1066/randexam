@@ -718,7 +718,7 @@ def keys_to_exams(K, k, u):
             e[si] = np.argwhere(K == k[si])[0, 0]
     return e
 
-def generate_grades(P, K, Q, V, A, u, k, a):
+def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
     N_e = K.shape[0]
@@ -741,15 +741,16 @@ def generate_grades(P, K, Q, V, A, u, k, a):
             P_sq[s,q] = P_seq[s,e[s],q]
             P_sQ[s,Q[e[s],q]] = P_seq[s,e[s],q]
 
-    for si in range(N_s):
-        best_e = P_se[si,:].argmax()
-        if e[si] < 0:
-            print("%s/%s/%s/%s: no valid key, best match is %s with %f points"
-                  % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], Pse[si,best_e]))
-        else:
-            if P_se[si,best_e] > P_se[si,e[si]]:
-                print("%s/%s/%s/%s got %f points with valid key %s, but best match is %s with %f points"
-                      % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,e[si]], K[e[si]], K[best_e], P_se[si,best_e]))
+    if warnings:
+        for si in range(N_s):
+            best_e = P_se[si,:].argmax()
+            if e[si] < 0:
+                print("%s/%s/%s/%s: no valid key, best match is %s with %f points"
+                      % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
+            else:
+                if P_se[si,best_e] > P_se[si,e[si]]:
+                    print("%s/%s/%s/%s got %f points with valid key %s, but best match is %s with %f points"
+                          % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,e[si]], K[e[si]], K[best_e], P_se[si,best_e]))
 
     return (P_seq, P_se, P_sq, P_s, P_sQ)
 
