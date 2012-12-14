@@ -117,7 +117,7 @@ class LibraryRegexp:
 
 class ReadState:
     def __init__(self):
-        self.name = "start"
+        self.name = "preamble"
         self.zone = Zone()
         self.question = Question()
         self.variant = Variant()
@@ -251,7 +251,7 @@ def read_library(input_filename):
                 state.answer.body += "\n"
             state.answer.body += line
 
-        if state.name == "start":
+        if state.name == "preamble":
             if match_name == "begin_document":   transition("coverpage")
             elif match_name == "text":           log("skipping text line")
             elif match_name == "blank":          log("skipping blank line")

@@ -2,7 +2,7 @@
 .PHONY: all
 all: randexam.pdf
 
-randexam.pdf: pipeline.pdf
+randexam.pdf: pipeline.pdf statemachine.pdf
 
 %.pdf: %.tex
 	pdflatex $<
@@ -18,4 +18,4 @@ randexam.pdf: pipeline.pdf
 	epstopdf $<
 
 clean:
-	rm -f pipeline.{pdf,png,eps} randexam.{pdf,aux,log}
+	rm -f pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam.{pdf,aux,log}

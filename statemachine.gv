@@ -1,0 +1,35 @@
+digraph partmc_modules {
+    rankdir = TB;
+    node [fontsize=10, height=0.3, width=0.5];
+    graph [nodesep=0.2, ranksep=0.3];
+    edge [arrowsize=0.7, fontsize=10, fontname=Courier];
+
+    start [shape=hexagon, style=filled, fillcolor=honeydew1];
+    end [shape=hexagon, style=filled, fillcolor=honeydew1];
+
+    preamble [shape=box, style=filled, fillcolor=lavender];
+    coverpage [shape=box, style=filled, fillcolor=lavender];
+    zone [shape=box, style=filled, fillcolor=lavender];
+    question [shape=box, style=filled, fillcolor=lavender];
+    variant [shape=box, style=filled, fillcolor=lavender];
+    answers [shape=box, style=filled, fillcolor=lavender];
+    answer [shape=box, style=filled, fillcolor=lavender];
+
+    start -> preamble
+    preamble -> coverpage [label=" \\begin{document}"]
+    preamble -> preamble [label=" <text>", dir=back]
+    coverpage -> zone [label=" \\zone"]
+    coverpage -> coverpage [label=" <text>", dir=back]
+    zone -> question [label="\\question"]
+    zone -> zone [label=" <text>", dir=back]
+    zone -> end [label="\\end{document}"]
+    question -> variant [label="\\variant"]
+    question -> question [label=" \\question", dir=back]
+    question -> zone [label="\\zone"]
+    question -> end [label="\\end{document}"]
+    variant -> answers [label=" \\begin{answers}   "]
+    variant -> variant [label=" <text>", dir=back]
+    answers -> answer [label="\\answer          \n\\correctanswer   "]
+    answer -> question [label=" \\end{answers}"]
+    answer -> answer [label="\n <text>        \n \\answer       \n \\correctanswer", dir=back]
+}
