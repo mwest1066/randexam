@@ -43,10 +43,12 @@ def main():
         sys.exit(0)
 
     if sys.argv[1] == "proc-lib":
-        for filename in [POINTS_FILENAME, SPECS_FILENAME, EXAMS_FILENAME, SOLUTIONS_FILENAME]:
-            if os.path.exists(filename):
-                print("ERROR: %s already exists, will not overwrite" % filename)
-                sys.exit(1)
+        protected_filenames = [f for f in [POINTS_FILENAME, SPECS_FILENAME, EXAMS_FILENAME, SOLUTIONS_FILENAME]
+                               if os.path.exists(f)]
+        if len(protected_filenames) > 0:
+            print("ERROR: output files already exist, will not overwrite: %s"
+                  % ", ".join(protected_filenames))
+            sys.exit(1)
         random.seed(RANDOM_SEED)
         library = read_library(LIBRARY_FILENAME)
         check_library(library)
