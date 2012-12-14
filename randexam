@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 # ToDo:
-#   add per-question points
 #   logging
 
 ######################################################################
@@ -96,6 +95,7 @@ class Question:
     def __init__(self):
         self.variants = []
         self.line_number = None
+        self.points = 0
         self.scantron_uses = 0
         self.scantron_answers = 0
         self.scantron_points = 0
@@ -168,15 +168,15 @@ def read_library(input_filename):
         print("ERROR: Unable to open library file for reading: %s: %s" % (input_filename, e))
         sys.exit(1)
     library_regexps = [
-        LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(.*)$", no_tail=True),
-        LibraryRegexp(name="zone", regexp=r"^\s*\\zone(.*)$", no_tail=True),
-        LibraryRegexp(name="question", regexp=r"^\s*\\question(.*)$", no_tail=True),
-        LibraryRegexp(name="variant", regexp=r"^\s*\\variant(.*)$", no_tail=True),
-        LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(.*)$", no_tail=True),
-        LibraryRegexp(name="answer", regexp=r"^\s*\\answer(.*)$"),
-        LibraryRegexp(name="correct_answer", regexp=r"^\s*\\correctanswer(.*)$"),
-        LibraryRegexp(name="end_answers", regexp=r"^\s*\\end\{answers\}(.*)$", no_tail=True),
-        LibraryRegexp(name="end_document", regexp=r"^\s*\\end\{document\}(.*)$", no_tail=True),
+        LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9]+)\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="answer", regexp=r"^\s*\\answer(?P<tail>.*)$"),
+        LibraryRegexp(name="correct_answer", regexp=r"^\s*\\correctanswer(?P<tail>.*)$"),
+        LibraryRegexp(name="end_answers", regexp=r"^\s*\\end\{answers\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="end_document", regexp=r"^\s*\\end\{document\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="text", regexp=r"^.*\S.*$"),
         LibraryRegexp(name="blank", regexp=r"^\s*$"),
         ]
@@ -202,13 +202,12 @@ def read_library(input_filename):
             if match:
                 match_name = library_regexp.name
                 if library_regexp.no_tail:
-                    extra_text = match.group(1).strip()
+                    extra_text = match.group("tail").strip()
                     if len(extra_text) > 0:
                         error("invalid extra text following '%s': %s", match_name, extra_text)
                 break
         else:
-            error("no matches found")
-            continue
+            error("no matches found for line")
         log("found match '%s'" % match_name)
 
         def transition(new_state_name):
@@ -226,6 +225,10 @@ def read_library(input_filename):
             state.question = Question()
             state.zone.questions.append(state.question)
             state.question.line_number = i_line + 1
+            try:
+                state.question.points = int(match.group("points"))
+            except Exception as e:
+                error("unable to determine points for question")
         def new_variant():
             log("starting new variant")
             state.variant = Variant()
@@ -236,7 +239,7 @@ def read_library(input_filename):
             state.answer = Answer()
             state.variant.answers.append(state.answer)
             state.answer.line_number = i_line + 1
-            state.answer.body = match.group(1)
+            state.answer.body = match.group("tail")
             state.answer.correct = correct
         def append_to_coverpage():
             log("appending line to coverpage")
@@ -312,6 +315,8 @@ def check_library(library):
         errors.append("ERROR: no zones")
     print("For each question variant listed below, V#-S#-# shows:")
     print("  variant number - number of answers - correct answer letter")
+    total_points = 0
+    Qi = 0
     for (i_zone, zone) in enumerate(library.zones):
         print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
         for (i_question, question) in enumerate(zone.questions):
@@ -342,7 +347,10 @@ def check_library(library):
                 variant_infos.append("V%d-S%d-%s"
                                      % (i_variant + 1, len(variant.answers),
                                         "".join([ind2chr(i) for i in correct_answer_indexes])))
-            print("    Question %d: %s" % (i_question + 1, ", ".join(variant_infos)))
+            print("    Question %d (%d points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
+            total_points += question.points
+            Qi += 1
+    print("Total points: %d" % total_points)
     if len(errors) > 0:
         for error in errors:
             print(error)
@@ -374,7 +382,7 @@ def extract_points(library, N_A):
                     if Ai < len(flat_questions[Qi].variants[Vi].answers):
                         if flat_questions[Qi].variants[Vi].answers[Ai].correct:
                             C[Qi,Vi] = ind2chr(Ai)
-                            P[Qi,Vi,Ai] = 1
+                            P[Qi,Vi,Ai] = flat_questions[Qi].points
     return (P, C)
 
 def write_points(output_filename, P):
@@ -599,7 +607,10 @@ def write_exams(output_filename, library, K, Q, V, A):
                     out_f.write(r"\vspace{10em}" + "\n")
                     out_f.write(r"\noindent" + "\n")
                     out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
-                    out_f.write(r"%d." % (qi + 1) + "\n")
+                    points = flat_questions[Q[ei,qi]].points
+                    out_f.write(r"%d. (%d %s)" % (qi + 1, points,
+                                                  "point" if points == 1 else "points")
+                                + "\n")
                     variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
                     out_f.write(variant.body + "\n")
                     out_f.write(r"\begin{enumerate}" + "\n")
