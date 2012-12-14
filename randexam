@@ -5,6 +5,8 @@
 
 # Configuration Section
 
+FILENAME_PREFIX = "final_"
+
 N_e = 25 # number of randomized exams
 N_A = 5 # maximum number of answers per question
 LAST_SCANTRON_QUESTION_NUMBER = 96
@@ -14,15 +16,15 @@ RANDOM_SEED = 7
 ######################################################################
 ######################################################################
 
-LIBRARY_FILENAME = "library.tex"
-SCANTRON_FILENAME = "scantron.dat"
-EXAMS_FILENAME = "exams.tex"
-SOLUTIONS_FILENAME = "solutions.csv"
-SPECS_FILENAME = "specs.csv"
-POINTS_FILENAME = "points.csv"
-ANSWERS_FILENAME = "answers.csv"
-GRADES_FILENAME = "grades.csv"
-STATS_PREFIX = "stats"
+LIBRARY_FILENAME = FILENAME_PREFIX + "library.tex"
+SCANTRON_FILENAME = FILENAME_PREFIX + "scantron.dat"
+EXAMS_FILENAME = FILENAME_PREFIX + "exams.tex"
+SOLUTIONS_FILENAME = FILENAME_PREFIX + "solutions.csv"
+SPECS_FILENAME = FILENAME_PREFIX + "specs.csv"
+POINTS_FILENAME = FILENAME_PREFIX + "points.csv"
+ANSWERS_FILENAME = FILENAME_PREFIX + "answers.csv"
+GRADES_FILENAME = FILENAME_PREFIX + "grades.csv"
+STATS_PREFIX = FILENAME_PREFIX + "stats"
 
 ######################################################################
 ######################################################################
