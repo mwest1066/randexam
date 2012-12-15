@@ -327,31 +327,31 @@ def check_library(library):
     Qi = 0
     for (i_zone, zone) in enumerate(library.zones):
         print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
-        for (i_question, question) in enumerate(zone.questions):
+        for question in zone.questions:
             variant_infos = []
             if len(question.variants) == 0:
                 errors.append("question %d (line %d): no variants"
-                              % (i_question + 1, question.line_number))
+                              % (Qi + 1, question.line_number))
             for (i_variant, variant) in enumerate(question.variants):
                 if len(variant.body) == 0:
                     errors.append("question %d, variant %d (line %d): no body text"
-                                  % (i_question + 1, i_variant + 1, variant.line_number))
+                                  % (Qi + 1, i_variant + 1, variant.line_number))
                 if len(variant.answers) < 2:
                     errors.append("question %d, variant %d (line %d): less than 2 answers"
-                                  % (i_question + 1, i_variant + 1, variant.line_number))
+                                  % (Qi + 1, i_variant + 1, variant.line_number))
                 correct_answer_indexes = []
                 for (i_answer, answer) in enumerate(variant.answers):
                     if len(answer.body) == 0:
                         errors.append("question %d, variant %d, answer %d (line %d): no body text"
-                                      % (i_question + 1, i_variant + 1, i_answer + 1, answer.line_number))
+                                      % (Qi + 1, i_variant + 1, i_answer + 1, answer.line_number))
                     if answer.correct:
                         correct_answer_indexes.append(i_answer)
                 if len(correct_answer_indexes) == 0:
                     errors.append("question %d, variant %d (line %d): no correct answer"
-                                  % (i_question + 1, i_variant + 1, variant.line_number))
+                                  % (Qi + 1, i_variant + 1, variant.line_number))
                 if len(correct_answer_indexes) > 1:
                     errors.append("question %d, variant %d (line %d): more than one correct answer"
-                                  % (i_question + 1, i_variant + 1, variant.line_number))
+                                  % (Qi + 1, i_variant + 1, variant.line_number))
                 variant_infos.append("V%d-S%d-%s"
                                      % (i_variant + 1, len(variant.answers),
                                         "".join([ind2chr(i) for i in correct_answer_indexes])))
