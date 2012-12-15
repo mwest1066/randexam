@@ -23,8 +23,11 @@ RANDOM_SEED = 7
 ######################################################################
 ######################################################################
 
+# input filenames
 LIBRARY_FILENAME = FILENAME_PREFIX + "library.tex"
 SCANTRON_FILENAME = FILENAME_PREFIX + "scantron.dat"
+
+# output filenames
 EXAMS_FILENAME = FILENAME_PREFIX + "exams.tex"
 SOLUTIONS_FILENAME = FILENAME_PREFIX + "solutions.csv"
 SPECS_FILENAME = FILENAME_PREFIX + "specs.csv"
@@ -326,27 +329,27 @@ def check_library(library):
         for (i_question, question) in enumerate(zone.questions):
             variant_infos = []
             if len(question.variants) == 0:
-                errors.append("ERROR: question %d (line %d): no variants"
+                errors.append("question %d (line %d): no variants"
                               % (i_question + 1, question.line_number))
             for (i_variant, variant) in enumerate(question.variants):
                 if len(variant.body) == 0:
-                    errors.append("ERROR: question %d, variant %d (line %d): no body text"
+                    errors.append("question %d, variant %d (line %d): no body text"
                                   % (i_question + 1, i_variant + 1, variant.line_number))
                 if len(variant.answers) < 2:
-                    errors.append("ERROR: question %d, variant %d (line %d): less than 2 answers"
+                    errors.append("question %d, variant %d (line %d): less than 2 answers"
                                   % (i_question + 1, i_variant + 1, variant.line_number))
                 correct_answer_indexes = []
                 for (i_answer, answer) in enumerate(variant.answers):
                     if len(answer.body) == 0:
-                        errors.append("ERROR: question %d, variant %d, answer %d (line %d): no body text"
+                        errors.append("question %d, variant %d, answer %d (line %d): no body text"
                                       % (i_question + 1, i_variant + 1, i_answer + 1, answer.line_number))
                     if answer.correct:
                         correct_answer_indexes.append(i_answer)
                 if len(correct_answer_indexes) == 0:
-                    errors.append("ERROR: question %d, variant %d (line %d): no correct answer"
+                    errors.append("question %d, variant %d (line %d): no correct answer"
                                   % (i_question + 1, i_variant + 1, variant.line_number))
                 if len(correct_answer_indexes) > 1:
-                    errors.append("ERROR: question %d, variant %d (line %d): more than one correct answer"
+                    errors.append("question %d, variant %d (line %d): more than one correct answer"
                                   % (i_question + 1, i_variant + 1, variant.line_number))
                 variant_infos.append("V%d-S%d-%s"
                                      % (i_variant + 1, len(variant.answers),
@@ -354,10 +357,12 @@ def check_library(library):
             print("    Question %d (%d points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
             total_points += question.points
             Qi += 1
+    if Qi == 0:
+        errors.append("no questions in library")
     print("Total points: %d" % total_points)
     if len(errors) > 0:
         for error in errors:
-            print(error)
+            print("ERROR: %s" % error)
         sys.exit(1)
 
 ######################################################################
