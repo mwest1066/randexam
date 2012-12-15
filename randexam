@@ -2,6 +2,10 @@
 
 # ToDo:
 #   logging
+#   input points as floats
+#   points in manual
+#   docstrings
+#   version info, check in Makefile
 
 ######################################################################
 ######################################################################
