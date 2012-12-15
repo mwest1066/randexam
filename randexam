@@ -176,9 +176,9 @@ def read_library(input_filename):
         sys.exit(1)
     library_regexps = [
         LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$"),
         LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9]+)\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$"),
         LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="answer", regexp=r"^\s*\\answer(?P<tail>.*)$"),
         LibraryRegexp(name="correct_answer", regexp=r"^\s*\\correctanswer(?P<tail>.*)$"),
@@ -211,7 +211,7 @@ def read_library(input_filename):
                 if library_regexp.no_tail:
                     extra_text = match.group("tail").strip()
                     if len(extra_text) > 0:
-                        error("invalid extra text following '%s': %s", match_name, extra_text)
+                        error("invalid extra text following '%s': %s" % (match_name, extra_text))
                 break
         else:
             error("no matches found for line")
@@ -227,6 +227,7 @@ def read_library(input_filename):
             state.zone = Zone()
             library.zones.append(state.zone)
             state.zone.line_number = i_line + 1
+            state.zone.body = match.group("tail").strip()
         def new_question():
             log("starting new question")
             state.question = Question()
@@ -241,12 +242,13 @@ def read_library(input_filename):
             state.variant = Variant()
             state.question.variants.append(state.variant)
             state.variant.line_number = i_line + 1
+            state.variant.body = match.group("tail").strip()
         def new_answer(correct):
             log("starting new answer")
             state.answer = Answer()
             state.variant.answers.append(state.answer)
             state.answer.line_number = i_line + 1
-            state.answer.body = match.group("tail")
+            state.answer.body = match.group("tail").strip()
             state.answer.correct = correct
         def append_to_coverpage():
             log("appending line to coverpage")
