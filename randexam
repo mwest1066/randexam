@@ -2,7 +2,6 @@
 
 # ToDo:
 #   logging
-#   input points as floats
 #   points in manual
 #   docstrings
 #   version info, check in Makefile
@@ -177,7 +176,7 @@ def read_library(input_filename):
     library_regexps = [
         LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$"),
-        LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9]+)\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9.]+)\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$"),
         LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="answer", regexp=r"^\s*\\answer(?P<tail>.*)$"),
@@ -234,7 +233,7 @@ def read_library(input_filename):
             state.zone.questions.append(state.question)
             state.question.line_number = i_line + 1
             try:
-                state.question.points = int(match.group("points"))
+                state.question.points = float(match.group("points"))
             except Exception as e:
                 error("unable to determine points for question")
         def new_variant():
@@ -356,12 +355,12 @@ def check_library(library):
                 variant_infos.append("V%d-S%d-%s"
                                      % (i_variant + 1, len(variant.answers),
                                         "".join([ind2chr(i) for i in correct_answer_indexes])))
-            print("    Question %d (%d points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
+            print("    Question %d (%g points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
             total_points += question.points
             Qi += 1
     if Qi == 0:
         errors.append("no questions in library")
-    print("Total points: %d" % total_points)
+    print("Total points: %g" % total_points)
     if len(errors) > 0:
         for error in errors:
             print("ERROR: %s" % error)
@@ -619,7 +618,7 @@ def write_exams(output_filename, library, K, Q, V, A):
                     out_f.write(r"\noindent" + "\n")
                     out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
                     points = flat_questions[Q[ei,qi]].points
-                    out_f.write(r"%d. (%d %s)" % (qi + 1, points,
+                    out_f.write(r"%d. (%g %s)" % (qi + 1, points,
                                                   "point" if points == 1 else "points")
                                 + "\n")
                     variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
@@ -794,14 +793,14 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
             ei = e[si]
             if ei < 0:
                 if P_se[si,best_e] > 0:
-                    print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %f points"
+                    print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %g points"
                           % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
                 else:
                     print("WARNING: %s/%s/%s/%s: invalid key, no match gives any points"
                           % (u[si,0], u[si,1], u[si,2], u[si,3]))
             else:
                 if P_se[si,best_e] > P_se[si,ei]:
-                    print("WARNING: %s/%s/%s/%s got %f points with valid key %s, but best match is %s with %f points"
+                    print("WARNING: %s/%s/%s/%s got %g points with valid key %s, but best match is %s with %g points"
                           % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e], P_se[si,best_e]))
 
     return (P_seq, P_se, P_sq, P_s, P_sQ)
