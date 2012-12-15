@@ -2,9 +2,9 @@
 
 # ToDo:
 #   logging
-#   points in manual
 #   docstrings
 #   version info, check in Makefile
+#   update manual to new CSV formats with new headers and leading numbers
 
 ######################################################################
 ######################################################################
