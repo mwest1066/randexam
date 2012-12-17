@@ -31,6 +31,11 @@ ANSWERS_FILENAME = FILENAME_PREFIX + "answers.csv"
 GRADES_FILENAME = FILENAME_PREFIX + "grades.csv"
 STATS_PREFIX = FILENAME_PREFIX + "stats"
 
+# logging filenames
+LOG_PROC_LIB_FILENAME = FILENAME_PREFIX + "proc_lib.log"
+LOG_PROC_SCAN_FILENAME = FILENAME_PREFIX + "proc_scan.log"
+LOG_PROC_ANS_FILENAME = FILENAME_PREFIX + "proc_ans.log"
+
 ######################################################################
 ######################################################################
 
@@ -56,6 +61,7 @@ def main():
             print("ERROR: output files already exist, will not overwrite: %s"
                   % ", ".join(protected_filenames))
             sys.exit(1)
+        init_logging(LOG_PROC_LIB_FILENAME)
         random.seed(RANDOM_SEED)
         library = read_library(LIBRARY_FILENAME)
         check_library(library)
@@ -67,11 +73,13 @@ def main():
         write_exams(EXAMS_FILENAME, library, K, Q, V, A)
         write_solutions(SOLUTIONS_FILENAME, library, K, Q, V, C)
     elif sys.argv[1] == "proc-scan":
+        init_logging(LOG_PROC_SCAN_FILENAME)
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         N_Q = Q.shape[1]
         (u, k, a) = read_scantrons(SCANTRON_FILENAME, N_e, N_Q, N_A)
         write_answers(ANSWERS_FILENAME, u, k, a)
     elif sys.argv[1] == "proc-ans":
+        init_logging(LOG_PROC_ANS_FILENAME)
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         (u, k, a) = read_answers(ANSWERS_FILENAME)
         P = read_points(POINTS_FILENAME)
@@ -81,6 +89,39 @@ def main():
     else:
         print("ERROR: unrecognized command: %s" % sys.argv[1])
         print("valid commands are \"proc-lib\", \"proc-scan\", or \"proc-ans\"")
+
+######################################################################
+######################################################################
+
+log_file = None
+
+def init_logging(output_filename):
+    global log_file
+    try:
+        if log_file != None:
+            raise Exception("logging already initialized")
+        log_file = open(output_filename, "w")
+    except Exception as e:
+        print("ERROR: failed to initialize logging: %s" % e)
+        sys.exit(1)
+
+def log(msg):
+    global log_file
+    try:
+        if log_file == None:
+            raise Exception("logging not initialized")
+        log_file.write(msg)
+    except Exception as e:
+        print("ERROR: logging failed for message '%s': %s" % (msg, e))
+        sys.exit(1)
+
+def log_and_print(msg):
+    log(msg)
+    print(msg)
+
+def die(msg):
+    log_and_print(msg)
+    sys.exit(1)
 
 ######################################################################
 ######################################################################
