@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-# ToDo:
-#   logging
-#   docstrings
-#   version info, check in Makefile
-#   update manual to new CSV formats with new headers and leading numbers
-
 ######################################################################
 ######################################################################
 # Configuration
