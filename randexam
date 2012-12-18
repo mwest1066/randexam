@@ -43,8 +43,8 @@ import re, random, sys, itertools, string, csv, os
 import numpy as np
 
 def main():
-    print("randexam version %s" % VERSION)
     if len(sys.argv) != 2:
+        print("randexam version %s" % VERSION)
         print("")
         print("usage: randexam <command>")
         print("")
@@ -62,6 +62,7 @@ def main():
                   % ", ".join(protected_filenames))
             sys.exit(1)
         init_logging(LOG_PROC_LIB_FILENAME)
+        log_and_print("randexam version %s" % VERSION)
         random.seed(RANDOM_SEED)
         library = read_library(LIBRARY_FILENAME)
         check_library(library)
@@ -74,12 +75,14 @@ def main():
         write_solutions(SOLUTIONS_FILENAME, library, K, Q, V, C)
     elif sys.argv[1] == "proc-scan":
         init_logging(LOG_PROC_SCAN_FILENAME)
+        log_and_print("randexam version %s" % VERSION)
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         N_Q = Q.shape[1]
         (u, k, a) = read_scantrons(SCANTRON_FILENAME, N_e, N_Q, N_A)
         write_answers(ANSWERS_FILENAME, u, k, a)
     elif sys.argv[1] == "proc-ans":
         init_logging(LOG_PROC_ANS_FILENAME)
+        log_and_print("randexam version %s" % VERSION)
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         (u, k, a) = read_answers(ANSWERS_FILENAME)
         P = read_points(POINTS_FILENAME)
@@ -89,6 +92,7 @@ def main():
     else:
         print("ERROR: unrecognized command: %s" % sys.argv[1])
         print("valid commands are \"proc-lib\", \"proc-scan\", or \"proc-ans\"")
+        sys.exit(1)
 
 ######################################################################
 ######################################################################
@@ -98,6 +102,7 @@ log_file = None
 def init_logging(output_filename):
     global log_file
     try:
+        print("Logging information to file: %s" % output_filename)
         if log_file != None:
             raise Exception("logging already initialized")
         log_file = open(output_filename, "w")
@@ -110,7 +115,7 @@ def log(msg):
     try:
         if log_file == None:
             raise Exception("logging not initialized")
-        log_file.write(msg)
+        log_file.write(msg + "\n")
     except Exception as e:
         print("ERROR: logging failed for message '%s': %s" % (msg, e))
         sys.exit(1)
@@ -122,6 +127,14 @@ def log_and_print(msg):
 def die(msg):
     log_and_print(msg)
     sys.exit(1)
+
+def log_array(arr, arr_name, dim_names):
+    if len(arr.shape) != len(dim_names):
+        die("log_array length mismatch for %s" % arr_name)
+    log("%s array: (%s)"
+        % (arr_name, ", ".join(["%s = %d" % (dim_names[i], arr.shape[i])
+                                for i in range(len(arr.shape))])))
+    log(np.array_str(arr))
 
 ######################################################################
 ######################################################################
@@ -207,11 +220,11 @@ def chr2ind(char):
 ######################################################################
 
 def read_library(input_filename):
+    log_and_print("Reading library file: %s" % input_filename)
     try:
         input_file = open(input_filename, "r")
     except Exception as e:
-        print("ERROR: Unable to open library file for reading: %s: %s" % (input_filename, e))
-        sys.exit(1)
+        die("ERROR: Unable to open library file for reading: %s: %s" % (input_filename, e))
     library_regexps = [
         LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$"),
@@ -228,18 +241,17 @@ def read_library(input_filename):
     library = Library()
     state = ReadState()
     for (i_line, line) in enumerate(input_file):
-        def log(msg):
-            print("%s:%d: %s" % (input_filename, i_line + 1, msg))
-        def error(msg):
-            print("%s:%d: ERROR: %s" % (input_filename, i_line + 1, msg))
-            sys.exit(1)
+        def file_log(msg):
+            log("%s:%d: %s" % (input_filename, i_line + 1, msg))
+        def file_die(msg):
+            die("%s:%d: ERROR: %s" % (input_filename, i_line + 1, msg))
         line = line.strip()
-        log("read line: \"%s\"" % line)
+        file_log("read line: \"%s\"" % line)
             
         match_comment = re.search(r"(?<!\\)%", line)
         if match_comment:
             line = line[:match_comment.start()]
-            log("stripped comments: \"%s\"" % line)
+            file_log("stripped comments: \"%s\"" % line)
         match_name = None
         match = None
         for library_regexp in library_regexps:
@@ -249,70 +261,70 @@ def read_library(input_filename):
                 if library_regexp.no_tail:
                     extra_text = match.group("tail").strip()
                     if len(extra_text) > 0:
-                        error("invalid extra text following '%s': %s" % (match_name, extra_text))
+                        file_die("invalid extra text following '%s': %s" % (match_name, extra_text))
                 break
         else:
-            error("no matches found for line")
-        log("found match '%s'" % match_name)
+            file_die("no matches found for line")
+        file_log("found match '%s'" % match_name)
 
         def transition(new_state_name):
-            log(r"state transition: '%s' -> '%s'" % (state.name, new_state_name))
+            file_log(r"state transition: '%s' -> '%s'" % (state.name, new_state_name))
             state.name = new_state_name
         def bad_transition():
-            error("'%s' not allowed in state '%s'" % (match_name, state.name))
+            file_die("'%s' not allowed in state '%s'" % (match_name, state.name))
         def new_zone():
-            log("starting new zone")
+            file_log("starting new zone")
             state.zone = Zone()
             library.zones.append(state.zone)
             state.zone.line_number = i_line + 1
             state.zone.body = match.group("tail").strip()
         def new_question():
-            log("starting new question")
+            file_log("starting new question")
             state.question = Question()
             state.zone.questions.append(state.question)
             state.question.line_number = i_line + 1
             try:
                 state.question.points = float(match.group("points"))
             except Exception as e:
-                error("unable to determine points for question")
+                file_die("unable to determine points for question")
         def new_variant():
-            log("starting new variant")
+            file_log("starting new variant")
             state.variant = Variant()
             state.question.variants.append(state.variant)
             state.variant.line_number = i_line + 1
             state.variant.body = match.group("tail").strip()
         def new_answer(correct):
-            log("starting new answer")
+            file_log("starting new answer")
             state.answer = Answer()
             state.variant.answers.append(state.answer)
             state.answer.line_number = i_line + 1
             state.answer.body = match.group("tail").strip()
             state.answer.correct = correct
         def append_to_coverpage():
-            log("appending line to coverpage")
+            file_log("appending line to coverpage")
             if len(library.coverpage) > 0:
                 library.coverpage += "\n"
             library.coverpage += line
         def append_to_zone_body():
-            log("appending line to zone body")
+            file_log("appending line to zone body")
             if len(state.zone.body) > 0:
                 state.zone.body += "\n"
             state.zone.body += line
         def append_to_variant_body():
-            log("appending line to variant body")
+            file_log("appending line to variant body")
             if len(state.variant.body) > 0:
                 state.variant.body += "\n"
             state.variant.body += line
         def append_to_answer_body():
-            log("appending line to answer body")
+            file_log("appending line to answer body")
             if len(state.answer.body) > 0:
                 state.answer.body += "\n"
             state.answer.body += line
 
         if state.name == "preamble":
             if match_name == "begin_document":   transition("coverpage")
-            elif match_name == "text":           log("skipping text line")
-            elif match_name == "blank":          log("skipping blank line")
+            elif match_name == "text":           file_log("skipping text line")
+            elif match_name == "blank":          file_log("skipping blank line")
             else: bad_transition()
         elif state.name == "coverpage":
             if match_name == "text":             append_to_coverpage()
@@ -324,14 +336,14 @@ def read_library(input_filename):
             elif match_name == "blank":          append_to_zone_body()
             elif match_name == "question":       transition("question"); new_question()
             elif match_name == "zone":           transition("zone"); new_zone()
-            elif match_name == "end_document":   log("stopping file reading"); break
+            elif match_name == "end_document":   file_log("stopping file reading"); break
             else: bad_transition()
         elif state.name == "question":
             if match_name == "variant":          transition("variant"); new_variant()
             elif match_name == "question":       transition("question"); new_question()
             elif match_name == "zone":           transition("zone"); new_zone()
-            elif match_name == "end_document":   log("stopping file reading"); break
-            elif match_name == "blank":          log("skipping blank line")
+            elif match_name == "end_document":   file_log("stopping file reading"); break
+            elif match_name == "blank":          file_log("skipping blank line")
             else: bad_transition()
         elif state.name == "variant":
             if match_name == "text":             append_to_variant_body()
@@ -341,7 +353,7 @@ def read_library(input_filename):
         elif state.name == "answers":
             if match_name == "correct_answer":   transition("answer"); new_answer(correct=True)
             elif match_name == "answer":         transition("answer"); new_answer(correct=False)
-            elif match_name == "blank":          log("skipping blank line")
+            elif match_name == "blank":          file_log("skipping blank line")
             else: bad_transition()
         elif state.name == "answer":
             if match_name == "text":             append_to_answer_body()
@@ -351,21 +363,23 @@ def read_library(input_filename):
             elif match_name == "end_answers":    transition("question")
             else: bad_transition()
         else:
-            error("unknown state '%s'", state.name)
+            file_die("unknown state '%s'", state.name)
 
     input_file.close()
+    log("Successfully completed library reading")
     return library
 
 def check_library(library):
+    log_and_print("Checking library data")
     errors = []
     if len(library.zones) == 0:
         errors.append("ERROR: no zones")
-    print("For each question variant listed below, V#-S#-# shows:")
-    print("  variant number - number of answers - correct answer letter")
+    log_and_print("For each question variant listed below, V#-S#-# shows:")
+    log_and_print("  variant number - number of answers - correct answer letter")
     total_points = 0
     Qi = 0
     for (i_zone, zone) in enumerate(library.zones):
-        print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
+        log_and_print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
         for question in zone.questions:
             variant_infos = []
             if len(question.variants) == 0:
@@ -394,16 +408,17 @@ def check_library(library):
                 variant_infos.append("V%d-S%d-%s"
                                      % (i_variant + 1, len(variant.answers),
                                         "".join([ind2chr(i) for i in correct_answer_indexes])))
-            print("    Question %d (%g points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
+            log_and_print("    Question %d (%g points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
             total_points += question.points
             Qi += 1
     if Qi == 0:
         errors.append("no questions in library")
-    print("Total points: %g" % total_points)
+    log_and_print("Total points: %g" % total_points)
     if len(errors) > 0:
         for error in errors:
-            print("ERROR: %s" % error)
-        sys.exit(1)
+            log_and_print("ERROR: %s" % error)
+        die("Errors found during library checking")
+    log("Successfully completed library checking")
 
 ######################################################################
 ######################################################################
@@ -417,6 +432,7 @@ def extract_points(library, N_A):
     P[Q,V,A] = points for answer A of variant V of library question Q
     C[Q,V] = the correct answer for variant V of library question Q
     """
+    log_and_print("Extracting points from library data")
     flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
     N_Q = len(flat_questions)
     N_V = max([len(q.variants) for q in flat_questions])
@@ -432,9 +448,13 @@ def extract_points(library, N_A):
                         if flat_questions[Qi].variants[Vi].answers[Ai].correct:
                             C[Qi,Vi] = ind2chr(Ai)
                             P[Qi,Vi,Ai] = flat_questions[Qi].points
+    log_array(P, "P", ["N_Q", "N_V", "N_A"])
+    log_array(C, "C", ["N_Q", "N_V"])
+    log("Successfully completed extracting points from library data")
     return (P, C)
 
 def write_points(output_filename, P):
+    log_and_print("Writing points file: %s" % output_filename)
     (N_Q, N_V, N_A) = P.shape
     with open(output_filename, 'w') as out_f:
         writer = csv.writer(out_f)
@@ -443,8 +463,10 @@ def write_points(output_filename, P):
             for Vi in range(N_V):
                 for Ai in range(N_A):
                     writer.writerow([Qi + 1, Vi + 1, ind2chr(Ai), P[Qi,Vi,Ai]])
+    log("Successfully completed writing points file")
 
 def read_points(input_filename):
+    log_and_print("Reading points data from file: %s" % input_filename)
     Q_data = []
     V_data = []
     A_data = []
@@ -455,21 +477,21 @@ def read_points(input_filename):
             if i_row == 0:
                 continue # skip header
             if len(row) != 4:
-                print("%s:%d: ERROR: expected 4 entries but got %d"
-                      % (input_filename, i_row + 1, len(row)))
-                sys.exit(1)
+                die("%s:%d: ERROR: expected 4 entries but got %d"
+                    % (input_filename, i_row + 1, len(row)))
             try:
                 Q_data.append(int(row[0]) - 1)
                 V_data.append(int(row[1]) - 1)
                 A_data.append(chr2ind(row[2]))
                 P_data.append(float(row[3]))
             except Exception as e:
-                print("%s:%s: ERROR: %s" % (input_filename, i_row + 1, e))
-                sys.exit(1)
+                die("%s:%s: ERROR: %s" % (input_filename, i_row + 1, e))
     N_Q = max(Q_data) + 1
     N_V = max(V_data) + 1
     N_A = max(A_data) + 1
     P = np.array(P_data, dtype=float).reshape((N_Q, N_V, N_A))
+    log_array(P, "P", ["N_Q", "N_V", "N_A"])
+    log("Successfully completed reading points data")
     return P
 
 ######################################################################
@@ -483,6 +505,7 @@ def generate_specs(library, N_e, N_A):
     V[e,q] = library variant number for exam e, question q
     A[e,q,a] = library answer number for exam e, question q, answer a
     """
+    log_and_print("Generating %d random exam specifications" % N_e)
     flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
     N_Q = len(flat_questions)
     N_V = max([len(q.variants) for q in flat_questions])
@@ -514,9 +537,15 @@ def generate_specs(library, N_e, N_A):
             random.shuffle(a_list)
             A[ei,qi,:] = np.array([ind2chr(i) for i in a_list])
 
+    log_array(K, "K", ["N_e"])
+    log_array(Q, "Q", ["N_e", "N_Q"])
+    log_array(V, "V", ["N_e", "N_Q"])
+    log_array(A, "A", ["N_e", "N_Q", "N_A"])
+    log("Successfully completed generating random exam specifications")
     return (K, Q, V, A)
 
 def write_specs(output_filename, K, Q, V, A):
+    log_and_print("Writing exam specs to file: %s" % output_filename)
     (N_e, N_Q) = Q.shape
     with open(output_filename, 'w') as out_f:
         writer = csv.writer(out_f)
@@ -529,8 +558,10 @@ def write_specs(output_filename, K, Q, V, A):
             for qi in range(N_Q):
                 row.extend([Q[ei,qi] + 1, V[ei,qi] + 1, "".join(A[ei,qi,:])])
             writer.writerow(row)
+    log("Successfully completed writing exam specs to file")
 
 def read_specs(input_filename):
+    log_and_print("Reading exam specifications from file: %s" % input_filename)
     K_data = []
     Q_data = []
     V_data = []
@@ -553,6 +584,11 @@ def read_specs(input_filename):
     Q = np.array(Q_data, dtype=int)
     V = np.array(V_data, dtype=int)
     A = np.array(A_data, dtype=str)
+    log_array(K, "K", ["N_e"])
+    log_array(Q, "Q", ["N_e", "N_Q"])
+    log_array(V, "V", ["N_e", "N_Q"])
+    log_array(A, "A", ["N_e", "N_Q", "N_A"])
+    log("Successfully completed reading exam specifications from file")
     return (K, Q, V, A)
 
 ######################################################################
@@ -611,6 +647,7 @@ def check_key_distances(K):
     """Checks that the keys are all distinct and prints the
     minimum Hamming distance between keys.
     """
+    log_and_print("Checking Hamming distances between exam keys")
     N_e = K.shape[0]
     if N_e < 1:
         return
@@ -620,12 +657,16 @@ def check_key_distances(K):
             if K[ei] == K[ej]:
                 raise Exception("duplicate key %s found" % K[ei])
             min_d = min(min_d, hamming_distance(K[ei], K[ej]))
-    print("Minimum Hamming distance between keys: %d" % min_d)
+    log_and_print("Minimum Hamming distance between keys: %d" % min_d)
+    if min_d < 3:
+        die("ERROR: Minimum Hamming distance %d is less than 3" % min_d)
+    log("Successfully completed checking minimum Hamming distances")
 
 ######################################################################
 ######################################################################
 
 def write_exams(output_filename, library, K, Q, V, A):
+    log_and_print("Writing randomized exams to file: %s" % output_filename)
     (N_e, N_Q, N_A) = A.shape
 
     flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
@@ -674,11 +715,13 @@ def write_exams(output_filename, library, K, Q, V, A):
                     qi += 1
 
         out_f.write(r"\end{document}" + "\n")
+    log("Successfully completed writing randomized exams")
 
 ######################################################################
 ######################################################################
 
 def write_solutions(output_filename, library, K, Q, V, C):
+    log_and_print("Writing solutions to file: %s" % output_filename)
     (N_e, N_Q) = Q.shape
 
     with open(output_filename, "w") as out_f:
@@ -686,11 +729,13 @@ def write_solutions(output_filename, library, K, Q, V, C):
         writer.writerow(["e", "K(e)"] + ["C(e,q=%d)" % (q + 1) for q in range(N_Q)])
         for e in range(N_e):
             writer.writerow([e + 1, K[e]] + [C[Q[e,q], V[e,q]] for q in range(N_Q)])
+    log("Successfully completed writing solutions to file")
 
 ######################################################################
 ######################################################################
 
 def read_scantrons(input_filename, N_e, N_Q, N_A):
+    log_and_print("Reading Scantron file: %s" % input_filename)
     key_length = len(generate_key(0, N_e, N_A))
     u_data = []
     k_data = []
@@ -701,18 +746,18 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
             def check_match(s, pattern, offset, field, min_length):
                 cleaned_s = re.sub(pattern, "", s)
                 if len(s) == 0 and min_length > 0:
-                    print("%s:%s: WARNING: field '%s' at character %d is empty"
-                          % (input_filename, i_line + 1, field, offset + 1))
+                    log("%s:%s: WARNING: field '%s' at character %d is empty"
+                        % (input_filename, i_line + 1, field, offset + 1))
                     return cleaned_s
                 if len(s) < min_length:
-                    print("%s:%s: WARNING: field '%s' at character %d has length %d but should be at least %d: %s"
-                          % (input_filename, i_line + 1, field, offset + 1, len(s), min_length, s))
+                    log("%s:%s: WARNING: field '%s' at character %d has length %d but should be at least %d: %s"
+                        % (input_filename, i_line + 1, field, offset + 1, len(s), min_length, s))
                     return cleaned_s
                 match = re.search(pattern, s)
                 if match:
                     i = match.start()
-                    print("%s:%s: WARNING: invalid character '%s' at character %d at position %d in field '%s': %s"
-                          % (input_filename, i_line + 1, s[i], i + offset + 1, i + 1, field, s))
+                    log("%s:%s: WARNING: invalid character '%s' at character %d at position %d in field '%s': %s"
+                        % (input_filename, i_line + 1, s[i], i + offset + 1, i + 1, field, s))
                     return cleaned_s
                 return s
 
@@ -724,9 +769,8 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
             key_start = key_end - key_length
 
             if len(line) < key_end:
-                print("%s:%d: ERROR: line length %d less than expected %d" \
-                          % (input_filename, i_line + 1, len(line), key_end))
-                sys.exit(1)
+                die("%s:%d: ERROR: line length %d less than expected %d" \
+                        % (input_filename, i_line + 1, len(line), key_end))
 
             last_name = check_match(line[40:50].strip(), "[^A-Z ]", 40, "Last Name", 1)
             first_initial = check_match(line[50:51].strip(), "[^A-Z]", 50, "First Initial", 1)
@@ -741,6 +785,8 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
                        for c in answers]
             key = "".join(["*" if c == " " else ind2chr(int(c) - 1)
                            for c in key])
+            log("%s:%s: student %s/%s/%s/%s"
+                % (input_filename, i_line + 1, last_name, first_initial, student_number, network_id))
 
             u_data.append([last_name, first_initial, student_number, network_id])
             k_data.append(key)
@@ -749,9 +795,14 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
     u = np.array(u_data, dtype=object)
     k = np.array(k_data, dtype=object)
     a = np.array(a_data, dtype=str)
+    log_array(u, "u", ["N_s", "N_i"])
+    log_array(k, "k", ["N_s"])
+    log_array(a, "a", ["N_s", "N_Q"])
+    log("Successfully completed reading Scantron file")
     return (u, k, a)
 
 def write_answers(output_filename, u, k, a):
+    log_and_print("Writing answers to file: %s" % output_filename)
     (N_s, N_Q) = a.shape
     with open(output_filename, 'w') as out_f:
         writer = csv.writer(out_f)
@@ -760,8 +811,10 @@ def write_answers(output_filename, u, k, a):
         for si in range(N_s):
             writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], k[si]]
                             + [a[si,qi] for qi in range(N_Q)])
+    log("Successfully completed writing answers to file")
 
 def read_answers(input_filename):
+    log_and_print("Reading answers from file: %s" % input_filename)
     u_data = []
     k_data = []
     a_data = []
@@ -779,24 +832,32 @@ def read_answers(input_filename):
     u = np.array(u_data, dtype=object)
     k = np.array(k_data, dtype=object)
     a = np.array(a_data, dtype=str)
+    log_array(u, "u", ["N_s", "N_i"])
+    log_array(k, "k", ["N_s"])
+    log_array(a, "a", ["N_s", "N_Q"])
+    log("Successfully completed reading answers from file")
     return (u, k, a)
 
 ######################################################################
 ######################################################################
 
 def keys_to_exams(K, k, u):
+    log_and_print("Matching keys to exams")
     N_s = k.shape[0]
     e = np.zeros(N_s, dtype=int)
     for si in range(N_s):
         if k[si] in K:
             e[si] = np.argwhere(K == k[si])[0, 0]
         else:
-            print("WARNING: key '%s' for student %s/%s/%s/%s not found"
-                  % (k[si], u[si,0], u[si,1], u[si,2], u[si,3]))
+            log_and_print("WARNING: key '%s' for student %s/%s/%s/%s not found"
+                          % (k[si], u[si,0], u[si,1], u[si,2], u[si,3]))
             e[si] = -1
+    log_array(e, "e", ["N_s"])
+    log("Successfully completed matching keys to exams")
     return e
 
 def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
+    log_and_print("Generating grades")
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
     N_e = K.shape[0]
@@ -834,19 +895,26 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
             ei = e[si]
             if ei < 0:
                 if P_se[si,best_e] > 0:
-                    print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %g points"
-                          % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
+                    log_and_print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %g points"
+                                  % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
                 else:
-                    print("WARNING: %s/%s/%s/%s: invalid key, no match gives any points"
-                          % (u[si,0], u[si,1], u[si,2], u[si,3]))
+                    log_and_print("WARNING: %s/%s/%s/%s: invalid key, no match gives any points"
+                                  % (u[si,0], u[si,1], u[si,2], u[si,3]))
             else:
                 if P_se[si,best_e] > P_se[si,ei]:
-                    print("WARNING: %s/%s/%s/%s got %g points with valid key %s, but best match is %s with %g points"
-                          % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e], P_se[si,best_e]))
+                    log_and_print("WARNING: %s/%s/%s/%s got %g points with valid key %s, but best match is %s with %g points"
+                                  % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e], P_se[si,best_e]))
 
+    log_array(P_seq, "P_seq", ["N_s", "N_e", "N_Q"])
+    log_array(P_se, "P_se", ["N_s", "N_e"])
+    log_array(P_sq, "P_sq", ["N_s", "N_Q"])
+    log_array(P_s, "P_s", ["N_s"])
+    log_array(P_sQ, "P_sQ", ["N_s", "N_Q"])
+    log("Successfully completed generating grades")
     return (P_seq, P_se, P_sq, P_s, P_sQ)
 
 def write_grades(output_filename, u, P_s):
+    log_and_print("Writing grades to file: %s" % output_filename)
     N_s = u.shape[0]
 
     with open(output_filename, 'w') as out_f:
@@ -854,6 +922,7 @@ def write_grades(output_filename, u, P_s):
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "P_s(s)"])
         for si in range(N_s):
             writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], P_s[si]])
+    log("Successfully completed writing grades to file")
 
 def write_csv(output_filename, headers, data, index_formats=None):
     """Write the given array as a CSV file.
@@ -866,6 +935,7 @@ def write_csv(output_filename, headers, data, index_formats=None):
     the last index as the columns. Breaking this rule, a 1D array is
     written as a column.
     """
+    log_and_print("Writing statistics file: %s" % output_filename)
     if index_formats == None:
         index_formats = ["i"] * len(data.shape)
     def format_index(i, f):
@@ -894,6 +964,7 @@ def write_csv(output_filename, headers, data, index_formats=None):
                 for j in range(data.shape[-1]):
                     row.append(data[index + (j,)])
                 writer.writerow(row)
+    log("Successfully completed writing statistics file")
 
 def write_halfviz(output_filename, data, threshold):
     """Write a graph from the given data in halfviz format.
@@ -902,14 +973,17 @@ def write_halfviz(output_filename, data, threshold):
     a connection strength between i and j. The output graph has an
     edge i-j if data[i,j] > threshold.
     """
+    log_and_print("Writing graph file: %s" % output_filename)
     N = data.shape[0]
     with open(output_filename, "w") as out_f:
         for i in range(N):
             for j in range(i):
                 if data[i,j] > threshold:
                     out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
+    log("Successfully completed writing graph file")
 
 def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
+    log_and_print("Generating and writing statistics")
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
     e = keys_to_exams(K, k, u)
@@ -981,11 +1055,11 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     for Qi in range(N_Q):
         for Vi in range(N_V):
             if R_QV[Qi,Vi] > R_QV_threshold_high:
-                print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually high"
-                      % (Qi, Vi, R_QV[Qi,Vi]))
+                log_and_print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually high"
+                              % (Qi, Vi, R_QV[Qi,Vi]))
             if R_QV[Qi,Vi] < R_QV_threshold_low:
-                print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually low"
-                      % (Qi, Vi, R_QV[Qi,Vi]))
+                log_and_print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually low"
+                              % (Qi, Vi, R_QV[Qi,Vi]))
 
     r_s_QQ = np.corrcoef(P_sQ.transpose())
     write_csv(output_prefix + "_r_s_QQ.csv", ["Q1", "r_s(Q1,Q2=%d)"], r_s_QQ)
@@ -1019,8 +1093,10 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             if e[si] >= 0 and e[si] == e[sj] \
                     and r_ai_ss[si,sj] > r_ai_ss_threshold \
                     and n_ai_ss[si,sj] > n_ai_ss_threshold:
-                print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
-                      % (si, sj, r_ai_ss[si,sj], si, sj, n_ai_ss[si,sj]))
+                log_and_print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
+                              % (si, sj, r_ai_ss[si,sj], si, sj, n_ai_ss[si,sj]))
+
+    log("Successfully completed generating and writing statistics")
 
 ######################################################################
 ######################################################################
