@@ -3,8 +3,6 @@ logging
 
 docstrings
 
-update manual to new CSV formats with new headers and leading numbers
-
 make webpage
 
 better warnings based on r_ai_ss
