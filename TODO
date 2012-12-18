@@ -3,8 +3,6 @@ logging
 
 docstrings
 
-version info, check in Makefile
-
 update manual to new CSV formats with new headers and leading numbers
 
 make webpage
@@ -19,3 +17,6 @@ output summary tex file showing question and student performance
   - histogram showing answer choices (mark correct one somehow) R^a_QVA = n^a_QVA / n^s_QV
   - variant ratios R_QV (not needed? can see from R^a_QVA?)
 - correlation between questions
+
+check that answers are distinct
+also check that question variants are distinct?
