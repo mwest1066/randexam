@@ -34,4 +34,4 @@ randexam.pdf: pipeline.pdf statemachine.pdf
 	epstopdf $<
 
 clean:
-	rm -f pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,solutions,answers,grades}.csv exams.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz}
+	rm -f pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,solutions,answers,grades}.csv exams.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz} proc_{lib,scan,ans}.log
