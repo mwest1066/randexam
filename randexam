@@ -6,7 +6,7 @@ VERSION = "1.0.0"
 ######################################################################
 # Configuration
 
-FILENAME_PREFIX = "final_"
+FILENAME_PREFIX = ""
 
 N_e = 5 # number of randomized exams
 N_A = 5 # maximum number of answers per question
