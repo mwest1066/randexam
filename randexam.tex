@@ -7,9 +7,9 @@
 
 \begin{document}
 
-\title{Randomized Exam Generation and Grading}
+\title{Randomized Exam Generation and Grading\\[0.5em] Version 1.0.0}
 \author{Matt West}
-\date{\today}
+\date{}
 \maketitle
 
 \section{Concepts}
@@ -243,20 +243,20 @@ This file encodes the arrays:
     & library answer corresponding to answer $a$ for question $q$ on exam $e$
   \end{tabular}
 \end{center}
-The first column is the exam key, then triples of columns identify the
-library question $Q$, variant $V$, and library answer order. As an
-example:
+The first column is the exam number, the second column is the exam
+key, and then triples of columns identify the library question $Q$,
+variant $V$, and library answer order. As an example:
 \begin{verbatim}
-Key,Q1,V1,A1,Q2,V2,A2,Q3,V3,A3
-AADC,2,2,DEBCA,3,2,DCEBA,1,2,CBDAE
-BAED,1,2,BDCAE,2,1,DECBA,3,2,CAEBD
+e,K(e),"Q(e,q=1)","V(e,q=1)","A(e,q=1,:)","Q(e,q=2)","V(e,q=2)","A(e,q=2,:)"
+1,ADC,2,2,DEBCA,3,2,DCEBA
+2,BED,1,2,BDCAE,2,1,DECBA
 \end{verbatim}
-Here the key of the first exam is $K(1) = {\rm AADC}$ and the second
+Here the key of the first exam is $K(1) = {\rm ADC}$ and the second
 question on this exam is variant $V(1,2) = 2$ of library question
-$Q(1,2) = 3$. The first answer on the exam paper is answer
-$A(1,2,1) = \rm D$ from the library question, while the
-second answer on the exam paper is answer $A(1,2,2) = \rm C$ from the
-library question.
+$Q(1,2) = 3$. The first answer for this question on the exam paper is
+answer $A(1,2,1) = \rm D$ from the library question, while the second
+answer on the exam paper is answer $A(1,2,2) = \rm C$ from the library
+question.
 
 \subsection{\texttt{points.csv}}
 
@@ -271,7 +271,7 @@ The points file encodes the array:
 \end{center}
 This is stored as a four-column file with entries like:
 \begin{verbatim}
-Q,V,A,P
+Q,V,A,"P(Q,V,A)"
 ...
 2,1,A,0.0
 2,1,B,0.0
@@ -296,17 +296,19 @@ hand is necessary. This thus encodes the array:
     & the correct answer for question $q$ on exam $e$
   \end{tabular}
 \end{center}
-The first column gives the exam key for reference, and then subsequent
-columns give the correct answers. For example:
+The first two columns give the exam number and key for reference, and
+then subsequent columns give the correct answers. For example:
 \begin{verbatim}
-Key,C1,C2,C3
-AADC,A,A,D
-BAED,D,A,A
-CAAE,A,E,D
+e,K(e),"C(e,q=1)","C(e,q=2)","C(e,q=3)"
+1,ADC,A,A,D
+2,BED,D,A,A
+3,CAE,A,E,D
+4,DBA,A,A,D
+5,ECB,B,E,A
 \end{verbatim}
-Here the third exam has key $K(3) = \rm CAAE$ and the correct
-answer for the first question is $c(3,1) = \rm A$, while the correct
-answer for the second question is $c(3,2) = E$, etc.
+Here the third exam has key $K(3) = \rm CAE$ and the correct answer
+for the first question on this exam is $c(3,1) = \rm A$, while the
+correct answer for the second question is $c(3,2) = E$, etc.
 
 The correct answers each exam are derived from the correct answers in
 the library file, given for each library question and each variant in
@@ -351,33 +353,35 @@ This file is essentially just a CSV version of the data in
     & key filled in by student $s$
   \end{tabular}
 \end{center}
-The first four columns in the data file store the student information,
-the fifth column stores the exam key, and then columns 6 and up store
-the answers to the questions in exam order. As an example:
+The first column in the data file is the student number, then the next
+four columns store the student information, the sixth column stores
+the exam key, and then columns 7 and up store the answers to the
+questions in exam order. As an example:
 \begin{verbatim}
-Name,Initial,Number,NetID,Key,a1,a2,a3
-DEVILLE,R,993502067,RDEVILLE,ACAB,D,C,D
-WEST,M,795969582,MWEST,BEDB,B,E,B
+s,Name,Initial,Number,NetID,k(s),"a(s,q=1)","a(s,q=2)","a(s,q=3)"
+1,DEVILLE,R,993502067,RDEVILLE,CAE,D,C,D
+2,WEST,M,795969582,MWEST,ECB,B,E,B
 \end{verbatim}
 Here we see the second student has information giving the last name
 $u(2,1) = \mathtt{WEST}$, the first initial $u(2,2) = \mathtt{M}$, the
 student number $u(2,3) = 795969582$, and the NetID $u(2,4) =
-\texttt{MWEST}$. The exam key for this student is $k(2) = \rm BEDB$
-and the student gave answer $a(2,1) = \rm B$ for question 1 on this
-exam paper, answer $a(2,2) = \rm E$ for question 2, etc.
+\texttt{MWEST}$. The exam key for this student is $k(2) = \rm ECB$ and
+the student gave answer $a(2,1) = \rm B$ for question 1 on this exam
+paper, answer $a(2,2) = \rm E$ for question 2, etc.
 
 \subsection{\texttt{grades.csv}}
 
 This file encodes the array $P_{\rm se}(s)$ described in
-Section~\ref{sec:grading}. For reference, the student information in
-array $u(s,i)$ is also included in the first columns. As an example:
+Section~\ref{sec:grading}. For reference, the student number and
+information in array $u(s,i)$ is also included in the first
+columns. As an example:
 \begin{verbatim}
-Name,Initial,Number,NetID,Points
-DEVILLE,R,993502067,RDEVILLE,2.0
-WEST,M,795969582,MWEST,2.0
+s,Name,Initial,Number,NetID,P_s(s)
+1,DEVILLE,R,993502067,RDEVILLE,2.0
+2,WEST,M,795969582,MWEST,2.0
 \end{verbatim}
-Here we see that both students have total points $P_{\rm se}(1) =
-P_{\rm se}(2) = 2.0$.
+Here we see that both students have total points $P_{\rm s}(1) =
+P_{\rm s}(2) = 2.0$.
 
 \subsection{\texttt{stats\underline{ }*.csv}}
 

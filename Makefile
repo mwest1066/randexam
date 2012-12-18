@@ -3,7 +3,7 @@ VERSION = 1.0.0
 RELEASE_DATE = 2012-12-18
 RELEASE_NAME = randexam-$(VERSION)
 
-RELEASE_FILES = ChangeLog Makefile README COPYING randexam randexam.tex randexam.pdf final_library.tex final_scantron.dat
+RELEASE_FILES = ChangeLog Makefile README COPYING randexam randexam.tex randexam.pdf library.tex scantron.dat
 
 .PHONY: all release
 all: randexam.pdf
@@ -34,4 +34,4 @@ randexam.pdf: pipeline.pdf statemachine.pdf
 	epstopdf $<
 
 clean:
-	rm -f pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam.{pdf,aux,log,synctex.gz} final_stats_*.{csv,halfviz} final_{points,specs,solutions,answers,grades}.csv final_exams.{tex,pdf,aux,log,synctex.gz} final_library.{pdf,aux,log,synctex.gz}
+	rm -f pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,solutions,answers,grades}.csv exams.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz}
