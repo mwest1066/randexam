@@ -8,7 +8,7 @@ VERSION = "1.0.0"
 
 FILENAME_PREFIX = "final_"
 
-N_e = 125 # number of randomized exams
+N_e = 5 # number of randomized exams
 N_A = 5 # maximum number of answers per question
 LAST_SCANTRON_QUESTION_NUMBER = 96
 
@@ -932,7 +932,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
 
     R_QV = np.zeros((N_Q, N_V))
     for Qi in range(N_Q):
-        R_QV[Qi,:] = Pbar_QV[Qi,:] / Pbar_Q[Qi]
+        R_QV[Qi,:] = Pbar_QV[Qi,:] / (Pbar_Q[Qi] if Pbar_Q[Qi] != 0 else 1)
     write_csv(output_prefix + "_R_QV.csv", ["Q", "R(Q,V=%d)"], R_QV)
 
     R_QV_threshold_high = 1.2
