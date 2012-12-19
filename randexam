@@ -743,21 +743,27 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
     key_length = len(generate_key(0, N_e, N_A))
     with open(input_filename, "r") as in_f:
         for (i_line, line) in enumerate(in_f):
-            def check_match(s, pattern, offset, field, min_length):
-                cleaned_s = re.sub(pattern, "", s)
+            def check_match(s, pattern, offset, field, min_length, strip):
+                if strip:
+                    s = s.strip()
+                cleaned_s = re.sub(pattern, " ", s)
+                if strip:
+                    cleaned_s = cleaned_s.strip()
                 if len(s) == 0 and min_length > 0:
-                    log("%s:%s: WARNING: field '%s' at character %d is empty"
-                        % (input_filename, i_line + 1, field, offset + 1))
+                    log_and_print("%s:%s: WARNING: field '%s' at character %d is empty"
+                                  % (input_filename, i_line + 1, field, offset + 1))
                     return cleaned_s
                 if len(s) < min_length:
-                    log("%s:%s: WARNING: field '%s' at character %d has length %d but should be at least %d: %s"
-                        % (input_filename, i_line + 1, field, offset + 1, len(s), min_length, s))
+                    log_and_print("%s:%s: WARNING: field '%s' at character %d has length %d but should be at least %d: %s"
+                                  % (input_filename, i_line + 1, field, offset + 1, len(s), min_length, s))
                     return cleaned_s
-                match = re.search(pattern, s)
-                if match:
+                bad_chars = False
+                for match in re.finditer(pattern, s):
+                    bad_chars = True
                     i = match.start()
-                    log("%s:%s: WARNING: invalid character '%s' at character %d at position %d in field '%s': %s"
-                        % (input_filename, i_line + 1, s[i], i + offset + 1, i + 1, field, s))
+                    log_and_print("%s:%s: WARNING: invalid character '%s' at character %d at position %d in field '%s': %s"
+                                  % (input_filename, i_line + 1, s[i], i + offset + 1, i + 1, field, s))
+                if bad_chars:
                     return cleaned_s
                 return s
 
@@ -772,14 +778,14 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
                 die("%s:%d: ERROR: line length %d less than expected %d" \
                         % (input_filename, i_line + 1, len(line), key_end))
 
-            last_name = check_match(line[40:50].strip(), "[^A-Z ]", 40, "Last Name", 1)
-            first_initial = check_match(line[50:51].strip(), "[^A-Z]", 50, "First Initial", 1)
-            student_number = check_match(line[51:60].strip(), "[^0-9]", 51, "Student Number", 9)
-            section = check_match(line[60:63].strip(), "[^0-9]", 60, "Section", 0)
-            network_id = check_match(line[63:71].strip(), "[^A-Z0-9]", 63, "Network ID", 1)
-            test_form = check_match(line[71:71].strip(), "[^A-Z]", 71, "Test Form", 0)
-            answers = check_match(line[72:72 + N_Q], "[^0-9 ]", 72, "Answers", 0)
-            key = check_match(line[key_start:key_end], "[^0-9]", key_start, "Key", key_length)
+            last_name = check_match(line[40:50], "[^A-Z ]", 40, "Last Name", 1, True)
+            first_initial = check_match(line[50:51], "[^A-Z]", 50, "First Initial", 1, True)
+            student_number = check_match(line[51:60], "[^0-9]", 51, "Student Number", 9, True)
+            section = check_match(line[60:63], "[^0-9]", 60, "Section", 0, True)
+            network_id = check_match(line[63:71], "[^A-Z0-9]", 63, "Network ID", 1, True)
+            test_form = check_match(line[71:71], "[^A-Z]", 71, "Test Form", 0, True)
+            answers = check_match(line[72:72 + N_Q], "[^0-9 ]", 72, "Answers", 0, False)
+            key = check_match(line[key_start:key_end], "[^0-9]", key_start, "Key", key_length, False)
 
             answers = ["*" if c == " " else ind2chr(int(c) - 1)
                        for c in answers]

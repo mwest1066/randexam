@@ -3,6 +3,8 @@
 
   * Add logging for all operations.
 
+  * Fix handling of bad characters in scantron.dat.
+
 1.0.0 - 2012-12-18
 
   * Initial release.
