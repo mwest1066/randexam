@@ -847,17 +847,33 @@ def read_answers(input_filename):
 ######################################################################
 ######################################################################
 
-def keys_to_exams(K, k, u):
+def keys_to_exams(K, k, u, warnings=False):
     log_and_print("Matching keys to exams")
     N_s = k.shape[0]
+    N_e = K.shape[0]
     e = np.zeros(N_s, dtype=int)
     for si in range(N_s):
         if k[si] in K:
             e[si] = np.argwhere(K == k[si])[0, 0]
         else:
-            log_and_print("WARNING: key '%s' for student %s/%s/%s/%s not found"
-                          % (k[si], u[si,0], u[si,1], u[si,2], u[si,3]))
             e[si] = -1
+            if warnings:
+                best_matches = []
+                min_d = 10000
+                for ei in range(N_e):
+                    d = hamming_distance(K[ei], k[si])
+                    if d < min_d:
+                        min_d = d
+                        best_matches = [K[ei]]
+                    elif d == min_d:
+                        best_matches.append(K[ei])
+                if len(best_matches) == 1:
+                    best_string = "best match is %s (Hamming distance %d)" % (best_matches[0], min_d)
+                else:
+                    best_string = "best matches are %s (all at Hamming distance %d)" \
+                        % (",".join(best_matches), min_d)
+                log_and_print("WARNING: key '%s' for student %s/%s/%s/%s not found: %s"
+                                  % (k[si], u[si,0], u[si,1], u[si,2], u[si,3], best_string))
     log_array(e, "e", ["N_s"])
     log("Successfully completed matching keys to exams")
     return e
@@ -868,7 +884,7 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
     N_s = u.shape[0]
     N_e = K.shape[0]
 
-    e = keys_to_exams(K, k, u)
+    e = keys_to_exams(K, k, u, warnings)
 
     P_seq = np.zeros((N_s, N_e, N_Q))
     for si in range(N_s):
@@ -901,15 +917,19 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
             ei = e[si]
             if ei < 0:
                 if P_se[si,best_e] > 0:
-                    log_and_print("WARNING: %s/%s/%s/%s: invalid key, best match is %s with %g points"
-                                  % (u[si,0], u[si,1], u[si,2], u[si,3], K[best_e], P_se[si,best_e]))
+                    log_and_print(("WARNING: %s/%s/%s/%s: invalid key %s, "
+                                   + "best match is %s with %g points (Hamming distance %d)")
+                                  % (u[si,0], u[si,1], u[si,2], u[si,3], k[si], K[best_e],
+                                     P_se[si,best_e], hamming_distance(k[si], K[best_e])))
                 else:
-                    log_and_print("WARNING: %s/%s/%s/%s: invalid key, no match gives any points"
-                                  % (u[si,0], u[si,1], u[si,2], u[si,3]))
+                    log_and_print("WARNING: %s/%s/%s/%s: invalid key %s, no match gives any points"
+                                  % (u[si,0], u[si,1], u[si,2], u[si,3], k[si]))
             else:
                 if P_se[si,best_e] > P_se[si,ei]:
-                    log_and_print("WARNING: %s/%s/%s/%s got %g points with valid key %s, but best match is %s with %g points"
-                                  % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e], P_se[si,best_e]))
+                    log_and_print(("WARNING: %s/%s/%s/%s got %g points with valid key %s, "
+                                   + "but best match is %s with %g points (Hamming distance %d)")
+                                  % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e],
+                                     P_se[si,best_e], hamming_distance(K[ei], K[best_e])))
 
     log_array(P_seq, "P_seq", ["N_s", "N_e", "N_Q"])
     log_array(P_se, "P_se", ["N_s", "N_e"])
