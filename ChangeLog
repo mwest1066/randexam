@@ -7,7 +7,7 @@
 
   * Improve matching of invalid and potentially-invalid keys.
 
-  * Output TeX file with plots of question answer choices.
+  * Output TeX statistics file.
 
 1.0.0 - 2012-12-18
 

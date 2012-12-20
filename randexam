@@ -1008,6 +1008,173 @@ def write_halfviz(output_filename, data, threshold):
                     out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
     log("Successfully completed writing graph file")
 
+def tex_write_basic_stats(out_f, P_s, P):
+    max_grade = P.max(axis=2).max(axis=1).sum()
+    out_f.write(r"\begin{center}" + "\n")
+    out_f.write(r"\begin{tabular}{|l|l|l|}" + "\n")
+    out_f.write(r"\hline" + "\n")
+    out_f.write(r"number of students & %d & \\" % len(P_s) + "\n")
+    out_f.write(r"\hline" + "\n")
+    out_f.write(r"minimum score & %g & %.1f\%% \\" % (P_s.min(), P_s.min() / max_grade * 100) + "\n")
+    out_f.write(r"\hline" + "\n")
+    out_f.write(r"maximum score & %g & %.1f\%% \\" % (P_s.max(), P_s.max() / max_grade * 100) + "\n")
+    out_f.write(r"\hline" + "\n")
+    out_f.write(r"mean score & %g & %.1f\%% \\" % (P_s.mean(), P_s.mean() / max_grade * 100) + "\n")
+    out_f.write(r"\hline" + "\n")
+    out_f.write(r"median score & %g & %.1f\%% \\" % (np.median(P_s), np.median(P_s) / max_grade * 100) + "\n")
+    out_f.write(r"\hline" + "\n")
+    out_f.write(r"\end{tabular}" + "\n")
+    out_f.write(r"\end{center}" + "\n")
+
+def tex_write_pdf(out_f, P_s, P):
+    min_grade = 0
+    max_grade = P.max(axis=2).max(axis=1).sum()
+    n_bins = 20
+    (hist, bin_edges) = np.histogram(P_s, bins=n_bins, range=(min_grade, max_grade))
+    out_f.write(r"\begin{center}" + "\n")
+    out_f.write(r"\begin{tikzpicture}" + "\n")
+    out_f.write(r"\begin{axis}[" + "\n")
+    out_f.write(r"xlabel={score}," + "\n")
+    out_f.write(r"ylabel={number of students}," + "\n")
+    out_f.write(r"ylabel style={overlay}," + "\n")
+    out_f.write(r"yticklabel style={overlay}" + "\n")
+    out_f.write(r"]" + "\n")
+    out_f.write(r"\addplot+[ybar interval] plot coordinates {" + "\n")
+    for i in range(len(hist)):
+        out_f.write(r"(%g,%g)" % (bin_edges[i], hist[i]) + "\n")
+    out_f.write(r"(%g,%g)" % (bin_edges[-1], hist[-1]) + "\n")
+    out_f.write(r"};" + "\n")
+    out_f.write(r"\end{axis}" + "\n")
+    out_f.write(r"\end{tikzpicture}" + "\n")
+    out_f.write(r"\end{center}" + "\n")
+
+def tex_write_cdf(out_f, P_s, P):
+    min_grade = 0
+    max_grade = P.max(axis=2).max(axis=1).sum()
+    sorted_P_s = P_s.copy()
+    sorted_P_s.sort()
+    out_f.write(r"\begin{center}" + "\n")
+    out_f.write(r"\begin{tikzpicture}" + "\n")
+    out_f.write(r"\begin{axis}[" + "\n")
+    out_f.write(r"xlabel={score}," + "\n")
+    out_f.write(r"ylabel={cumulative number of students}," + "\n")
+    out_f.write(r"ylabel style={overlay}," + "\n")
+    out_f.write(r"yticklabel style={overlay}" + "\n")
+    out_f.write(r"]" + "\n")
+    out_f.write(r"\addplot[const plot, draw=blue] coordinates {" + "\n")
+    out_f.write(r"(%g,0)" % min_grade + "\n")
+    for i in range(len(P_s)):
+        out_f.write(r"(%g,%d)" % (sorted_P_s[i], i + 1) + "\n")
+    out_f.write(r"(%g,%d)" % (max_grade, len(P_s)) + "\n")
+    out_f.write(r"};" + "\n")
+    out_f.write(r"\end{axis}" + "\n")
+    out_f.write(r"\end{tikzpicture}" + "\n")
+    out_f.write(r"\end{center}" + "\n")
+
+def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_sQ):
+    (N_Q, N_V, N_A) = P.shape
+    N_s = P_s.shape[0]
+
+    s = range(N_s)
+    s.sort(key=lambda i: P_s[i])
+    s = np.array(s, dtype=int)
+    X = np.zeros((N_s, N_Q), dtype=int)
+    for ri in range(N_s):
+        for Qi in range(N_Q):
+            if P_sQ[s[ri], Qi] > 0:
+                X[ri,Qi] = 1
+
+    n_sb_rQ = np.zeros((N_s, N_Q), dtype=int)
+    n_sa_rQ = np.zeros((N_s, N_Q), dtype=int)
+    for ri in range(N_s):
+        for Qi in range(N_Q):
+            n_sb_rQ[ri,Qi] = X[:ri,Qi].sum()
+            n_sa_rQ[ri,Qi] = X[ri:,Qi].sum()
+
+    acc_rQ = np.zeros((N_s, N_Q))
+    for ri in range(N_s):
+        for Qi in range(N_Q):
+            acc_rQ[ri,Qi] = (n_sa_rQ[ri,Qi] + ri - 1 - n_sb_rQ[ri,Qi]) / float(N_s)
+
+    for Qi in range(N_Q):
+        out_f.write(r"\vspace{2cm}" + "\n")
+        out_f.write(r"\noindent" + "\n")
+        out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+
+        out_f.write(r"\begin{tikzpicture}" + "\n")
+        out_f.write(r"\begin{axis}[" + "\n")
+        out_f.write(r"title={Question %d}," % (Qi + 1) + "\n")
+        out_f.write(r"ybar, ymin=0, ymax=100," + "\n")
+        out_f.write(r"width=13cm, height=4cm," + "\n")
+        out_f.write(r"ylabel={student frac.\ / \%}," + "\n")
+        out_f.write(r"symbolic x coords={A,B,C,D,E,none}," + "\n")
+        out_f.write(r"xtick=data," + "\n")
+        out_f.write(r"enlarge x limits=0.12," + "\n")
+        out_f.write(r"enlarge y limits={upper,value=0.25}," + "\n")
+        out_f.write(r"legend style={at={(1.02,0.5)},anchor=west}," + "\n")
+        out_f.write(r"bar width=0.39cm,  % 14 / 6 / 3 / 2" + "\n")
+        out_f.write(r"point meta=explicit," + "\n")
+        out_f.write(r"nodes near coords={\pgfmathfloatifflags{\pgfplotspointmeta}{0}{}{\pgfmathprintnumber{\pgfplotspointmeta}}}," + "\n")
+        out_f.write(r"]" + "\n")
+        for Vi in range(N_V):
+            if n_s_QV[Qi,Vi] == 0:
+                continue
+            out_f.write(r"\addplot coordinates {" + "\n")
+            for Ai in range(N_A):
+                out_f.write(r"(%s,%g) [%g]" % (ind2chr(Ai), r_a_QVA[Qi,Vi,Ai] * 100, P[Qi,Vi,Ai]) + "\n")
+            out_f.write(r"(none,%g) [0]" % (r_na_QV[Qi,Vi] * 100) + "\n")
+            out_f.write(r"};" + "\n")
+        out_f.write(r"\legend{%s};" % ",".join(["V%d" % (Vi + 1) for Vi in range(N_V) if n_s_QV[Qi,Vi] > 0]) + "\n")
+        out_f.write(r"\end{axis}" + "\n")
+        out_f.write(r"\end{tikzpicture}" + "\n")
+        out_f.write("\n")
+
+        out_f.write(r"\begin{tikzpicture}" + "\n")
+        out_f.write(r"\begin{axis}[" + "\n")
+        out_f.write(r"title={Question %d}," % (Qi + 1) + "\n")
+        out_f.write(r"ymin=0, ymax=100," + "\n")
+        out_f.write(r"no markers," + "\n")
+        out_f.write(r"enlargelimits=false," + "\n")
+        out_f.write(r"width=13cm, height=4cm," + "\n")
+        out_f.write(r"xlabel={student perc.\ rank / \%}," + "\n")
+        out_f.write(r"ylabel={accuracy / \%}," + "\n")
+        out_f.write(r"]" + "\n")
+        out_f.write(r"\addplot coordinates {" + "\n")
+        for ri in range(N_s):
+            out_f.write(r"(%g,%g)" % ((ri + 1) / float(N_s) * 100, acc_rQ[ri,Qi] * 100) + "\n")
+        out_f.write(r"};" + "\n")
+        out_f.write(r"\end{axis}" + "\n")
+        out_f.write(r"\end{tikzpicture}" + "\n")
+
+        out_f.write(r"\end{minipage}" + "\n")
+        out_f.write("\n")
+
+def write_stats_tex(output_filename, r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ):
+    log_and_print("Writing statistics tex file: %s" % output_filename)
+    with open(output_filename, "w") as out_f:
+        out_f.write(r"\documentclass{article}" + "\n")
+        out_f.write(r"\usepackage[margin=3cm]{geometry}" + "\n")
+        out_f.write(r"\usepackage{pgfplots}" + "\n")
+        out_f.write(r"\begin{document}" + "\n")
+        out_f.write("\n")
+
+        out_f.write(r"\section{Student score distribution}" + "\n")
+        out_f.write("\n")
+        out_f.write(r"\vspace{1cm}" + "\n")
+        tex_write_basic_stats(out_f, P_s, P)
+        out_f.write(r"\vspace{1cm}" + "\n")
+        tex_write_pdf(out_f, P_s, P)
+        out_f.write(r"\vspace{1cm}" + "\n")
+        tex_write_cdf(out_f, P_s, P)
+
+        out_f.write(r"\clearpage" + "\n")
+        out_f.write(r"\section{Question results}" + "\n")
+        out_f.write("\n")
+        write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_sQ)
+
+        out_f.write(r"\end{document}" + "\n")
+    log("Successfully completed writing statistics tex file")
+
 def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     log_and_print("Generating and writing statistics")
     (N_Q, N_V, N_A) = P.shape
@@ -1047,8 +1214,24 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     n_a_QV = n_a_QVA.sum(axis=2)
     write_csv(output_prefix + "_n_a_QV.csv", ["Q", "n_a(Q,V=%d)"], n_a_QV)
 
+    n_na_QV = n_s_QV - n_a_QV
+    write_csv(output_prefix + "_n_na_QV.csv", ["Q", "n_na(Q,V=%d)"], n_na_QV)
+
     n_a_Q = n_a_QV.sum(axis=1)
     write_csv(output_prefix + "_n_a_Q.csv", ["Q", "n_a(Q)"], n_a_Q)
+
+    r_a_QVA = np.zeros((N_Q, N_V, N_A))
+    for Qi in range(N_Q):
+        for Vi in range(N_V):
+            r_a_QVA[Qi,Vi,:] = n_a_QVA[Qi,Vi,:] / float(max(1, n_s_QV[Qi,Vi]))
+    write_csv(output_prefix + "_r_a_QVA.csv", ["Q", "V", "r_a(Q,V,A=%s)"], n_a_QVA,
+              index_formats=['i', 'i', 'c'])
+
+    r_na_QV = np.zeros((N_Q, N_V))
+    for Qi in range(N_Q):
+        for Vi in range(N_V):
+            r_na_QV[Qi,Vi] = n_na_QV[Qi,Vi] / float(max(1, n_s_QV[Qi,Vi]))
+    write_csv(output_prefix + "_r_na_QV.csv", ["Q", "r_na(Q,V=%d)"], n_na_QV)
 
     (P_seq, P_se, P_sq, P_s, P_sQ) = generate_grades(P, K, Q, V, A, u, k, a)
 
@@ -1122,43 +1305,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
                 log_and_print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
                               % (si, sj, r_ai_ss[si,sj], si, sj, n_ai_ss[si,sj]))
 
-    output_filename = output_prefix + ".tex"
-    log_and_print("Writing statistics tex file: %s" % output_filename)
-    with open(output_filename, "w") as out_f:
-        out_f.write(r"\documentclass{article}" + "\n")
-        out_f.write(r"\usepackage[margin=3cm]{geometry}" + "\n")
-        out_f.write(r"\usepackage{pgfplots}" + "\n")
-        out_f.write(r"\begin{document}" + "\n")
-        for Qi in range(N_Q):
-            out_f.write("\n\n" + r"\vspace{1cm}" + "\n")
-            out_f.write(r"\begin{tikzpicture}" + "\n")
-            out_f.write(r"\begin{axis}[" + "\n")
-            out_f.write(r"title={Question %d}," % (Qi + 1) + "\n")
-            out_f.write(r"ybar, ymin=0, ymax=100," + "\n")
-            out_f.write(r"width=13cm, height=4cm," + "\n")
-            out_f.write(r"ylabel={student prop. / \%}," + "\n")
-            out_f.write(r"symbolic x coords={A,B,C,D,E,none}," + "\n")
-            out_f.write(r"xtick=data," + "\n")
-            out_f.write(r"enlarge x limits=0.12," + "\n")
-            out_f.write(r"enlarge y limits={upper,value=0.25}," + "\n")
-            out_f.write(r"legend style={at={(1.02,0.5)},anchor=west}," + "\n")
-            out_f.write(r"bar width=0.39cm,  % 14 / 6 / 3 / 2" + "\n")
-            out_f.write(r"point meta=explicit," + "\n")
-            out_f.write(r"nodes near coords={\pgfmathfloatifflags{\pgfplotspointmeta}{0}{}{\pgfmathprintnumber{\pgfplotspointmeta}}}," + "\n")
-            out_f.write(r"]" + "\n")
-            for Vi in range(N_V):
-                if n_s_QV[Qi,Vi] == 0:
-                    continue
-                out_f.write(r"\addplot coordinates {" + "\n")
-                for Ai in range(N_A):
-                    out_f.write(r"(%s,%g) [%g]" % (ind2chr(Ai), float(n_a_QVA[Qi,Vi,Ai]) / n_s_QV[Qi,Vi] * 100, P[Qi,Vi,Ai])+ "\n")
-                out_f.write(r"(none,%g) [0]" % (float(n_s_QV[Qi,Vi] - n_a_QVA[Qi,Vi,:].sum()) / n_s_QV[Qi,Vi] * 100) + "\n")
-                out_f.write(r"};" + "\n")
-            out_f.write(r"\legend{%s};" % ",".join(["V%d" % (Vi + 1) for Vi in range(N_V) if n_s_QV[Qi,Vi] > 0]) + "\n")
-            out_f.write(r"\end{axis}" + "\n")
-            out_f.write(r"\end{tikzpicture}" + "\n")
-        out_f.write(r"\end{document}" + "\n")
-    log("Successfully completed writing statistics tex file")
+    write_stats_tex(output_prefix + ".tex", r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ)
 
     log("Successfully completed generating and writing statistics")
 
