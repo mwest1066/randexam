@@ -1122,6 +1122,44 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
                 log_and_print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
                               % (si, sj, r_ai_ss[si,sj], si, sj, n_ai_ss[si,sj]))
 
+    output_filename = output_prefix + ".tex"
+    log_and_print("Writing statistics tex file: %s" % output_filename)
+    with open(output_filename, "w") as out_f:
+        out_f.write(r"\documentclass{article}" + "\n")
+        out_f.write(r"\usepackage[margin=3cm]{geometry}" + "\n")
+        out_f.write(r"\usepackage{pgfplots}" + "\n")
+        out_f.write(r"\begin{document}" + "\n")
+        for Qi in range(N_Q):
+            out_f.write("\n\n" + r"\vspace{1cm}" + "\n")
+            out_f.write(r"\begin{tikzpicture}" + "\n")
+            out_f.write(r"\begin{axis}[" + "\n")
+            out_f.write(r"title={Question %d}," % (Qi + 1) + "\n")
+            out_f.write(r"ybar, ymin=0, ymax=100," + "\n")
+            out_f.write(r"width=13cm, height=4cm," + "\n")
+            out_f.write(r"ylabel={student prop. / \%}," + "\n")
+            out_f.write(r"symbolic x coords={A,B,C,D,E,none}," + "\n")
+            out_f.write(r"xtick=data," + "\n")
+            out_f.write(r"enlarge x limits=0.12," + "\n")
+            out_f.write(r"enlarge y limits={upper,value=0.25}," + "\n")
+            out_f.write(r"legend style={at={(1.02,0.5)},anchor=west}," + "\n")
+            out_f.write(r"bar width=0.39cm,  % 14 / 6 / 3 / 2" + "\n")
+            out_f.write(r"point meta=explicit," + "\n")
+            out_f.write(r"nodes near coords={\pgfmathfloatifflags{\pgfplotspointmeta}{0}{}{\pgfmathprintnumber{\pgfplotspointmeta}}}," + "\n")
+            out_f.write(r"]" + "\n")
+            for Vi in range(N_V):
+                if n_s_QV[Qi,Vi] == 0:
+                    continue
+                out_f.write(r"\addplot coordinates {" + "\n")
+                for Ai in range(N_A):
+                    out_f.write(r"(%s,%g) [%g]" % (ind2chr(Ai), float(n_a_QVA[Qi,Vi,Ai]) / n_s_QV[Qi,Vi] * 100, P[Qi,Vi,Ai])+ "\n")
+                out_f.write(r"(none,%g) [0]" % (float(n_s_QV[Qi,Vi] - n_a_QVA[Qi,Vi,:].sum()) / n_s_QV[Qi,Vi] * 100) + "\n")
+                out_f.write(r"};" + "\n")
+            out_f.write(r"\legend{%s};" % ",".join(["V%d" % (Vi + 1) for Vi in range(N_V) if n_s_QV[Qi,Vi] > 0]) + "\n")
+            out_f.write(r"\end{axis}" + "\n")
+            out_f.write(r"\end{tikzpicture}" + "\n")
+        out_f.write(r"\end{document}" + "\n")
+    log("Successfully completed writing statistics tex file")
+
     log("Successfully completed generating and writing statistics")
 
 ######################################################################
