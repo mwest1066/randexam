@@ -1083,27 +1083,6 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
     s = range(N_s)
     s.sort(key=lambda i: P_s[i])
     s = np.array(s, dtype=int)
-    X = np.zeros((N_s, N_Q), dtype=int)
-    for ri in range(N_s):
-        for Qi in range(N_Q):
-            if P_sQ[s[ri], Qi] > 0:
-                X[ri,Qi] = 1
-
-    n_sb_rQ = np.zeros((N_s, N_Q), dtype=int)
-    n_sa_rQ = np.zeros((N_s, N_Q), dtype=int)
-    for ri in range(N_s):
-        for Qi in range(N_Q):
-            n_sb_rQ[ri,Qi] = X[:ri,Qi].sum()
-            n_sa_rQ[ri,Qi] = X[ri:,Qi].sum()
-
-    acc_rQ = np.zeros((N_s, N_Q))
-    sens_rQ = np.zeros((N_s, N_Q))
-    spec_rQ = np.zeros((N_s, N_Q))
-    for ri in range(N_s):
-        for Qi in range(N_Q):
-            acc_rQ[ri,Qi] = (n_sa_rQ[ri,Qi] + ri - 1 - n_sb_rQ[ri,Qi]) / float(N_s)
-            sens_rQ[ri,Qi] = n_sa_rQ[ri,Qi] / float(X[:,Qi].sum())
-            spec_rQ[ri,Qi] = (ri - 1 - n_sb_rQ[ri,Qi]) / float(N_s - X[:,Qi].sum())
 
     N_g = 5
     g = np.zeros(N_s, dtype=int)
@@ -1185,50 +1164,18 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
         out_f.write(r"symbolic x coords={%s}," % ",".join(["%d" % (gi + 1) for gi in range(N_g)]) + "\n")
         out_f.write(r"xtick=data," + "\n")
         out_f.write(r"xlabel={ranked group $g$}," + "\n")
-        out_f.write(r"ylabel={\parbox{9em}{\centering fraction of students \\ $r^a_{\rm QVA}(Q,V,A)$ / \%}}," + "\n")
+        out_f.write(r"ylabel={\parbox{9em}{\centering normalized score \\ $\hat{P}_{\rm gQ}(g,Q)$ / \%}}," + "\n")
         out_f.write(r"ymajorgrids=true," + "\n")
         out_f.write(r"enlarge x limits=0.12," + "\n")
         out_f.write(r"bar width=%gcm," % (width / float(N_g) / 3) + "\n")
         out_f.write(r"]" + "\n")
         out_f.write(r"\addplot coordinates {" + "\n")
         for gi in range(N_g):
-            out_f.write(r"(%s,%g)" % (gi + 1, Pbar_norm_gQ[gi,Qi] * 100) + "\n")
+            out_f.write(r"(%s,%g)" % (gi + 1, Phat_gQ[gi,Qi] * 100) + "\n")
         out_f.write(r"};" + "\n")
         out_f.write(r"\end{axis}" + "\n")
         out_f.write(r"\end{tikzpicture}" + "\n")
         out_f.write("\n")
-
-        out_f.write(r"\begin{tikzpicture}" + "\n")
-        out_f.write(r"\begin{axis}[" + "\n")
-        out_f.write(r"ymin=0, ymax=100," + "\n")
-        out_f.write(r"no markers," + "\n")
-        out_f.write(r"xmajorgrids=true," + "\n")
-        out_f.write(r"ymajorgrids=true," + "\n")
-        out_f.write(r"enlargelimits=false," + "\n")
-        out_f.write(r"width=12cm, height=4cm," + "\n")
-        out_f.write(r"xlabel={student perc.\ rank / \%}," + "\n")
-        out_f.write(r"ylabel={quantity / \%}," + "\n")
-        out_f.write(r"legend style={at={(1.02,0.5)},anchor=west}," + "\n")
-        out_f.write(r"]" + "\n")
-
-        out_f.write(r"\addplot coordinates {" + "\n")
-        for ri in range(N_s):
-            out_f.write(r"(%g,%g)" % ((ri + 1) / float(N_s) * 100, sens_rQ[ri,Qi] * 100) + "\n")
-        out_f.write(r"};" + "\n")
-
-        out_f.write(r"\addplot coordinates {" + "\n")
-        for ri in range(N_s):
-            out_f.write(r"(%g,%g)" % ((ri + 1) / float(N_s) * 100, spec_rQ[ri,Qi] * 100) + "\n")
-        out_f.write(r"};" + "\n")
-
-        out_f.write(r"\addplot coordinates {" + "\n")
-        for ri in range(N_s):
-            out_f.write(r"(%g,%g)" % ((ri + 1) / float(N_s) * 100, acc_rQ[ri,Qi] * 100) + "\n")
-        out_f.write(r"};" + "\n")
-
-        out_f.write(r"\legend{sensitivity,specificity,accuracy};" + "\n")
-        out_f.write(r"\end{axis}" + "\n")
-        out_f.write(r"\end{tikzpicture}" + "\n")
 
         out_f.write(r"\end{minipage}" + "\n")
         out_f.write("\n")
