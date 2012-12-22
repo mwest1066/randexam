@@ -1128,13 +1128,13 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
     Pmax_QV = P.max(axis=2)
     Pmax_Q = Pmax_QV.max(axis=1)
 
-    Pbar_norm_gQ = np.zeros((N_g, N_Q))
+    Phat_gQ = np.zeros((N_g, N_Q))
     for gi in range(N_g):
         for Qi in range(N_Q):
-            Pbar_norm_gQ[gi,Qi] = Pbar_gQ[gi,Qi] / Pmax_Q[Qi]
+            Phat_gQ[gi,Qi] = Pbar_gQ[gi,Qi] / Pmax_Q[Qi]
 
     for Qi in range(N_Q):
-        out_f.write(r"\vspace{2cm}" + "\n")
+        out_f.write(r"\vspace{1cm}" + "\n")
         out_f.write(r"\noindent" + "\n")
         out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
 
@@ -1202,7 +1202,7 @@ def write_stats_tex_question_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ):
     Pmax_QV = P.max(axis=2)
     Pmax_Q = Pmax_QV.max(axis=1)
 
-    Pbar_norm_Q = Pbar_Q / Pmax_Q
+    Phat_Q = Pbar_Q / Pmax_Q
 
     d_Q = np.zeros(N_Q)
     for Qi in range(N_Q):
@@ -1212,7 +1212,7 @@ def write_stats_tex_question_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ):
     out_f.write(r"\begin{axis}[" + "\n")
     out_f.write(r"ybar, ymin=0," + "\n")
     out_f.write(r"xmin=1, xmax=%d," % N_Q + "\n")
-    out_f.write(r"width=14cm, height=8cm," + "\n")
+    out_f.write(r"width=13cm, height=8cm," + "\n")
     out_f.write(r"xlabel={question number $Q$}," + "\n")
     out_f.write(r"ylabel={quantity / \%}," + "\n")
     out_f.write(r"ymajorgrids=true," + "\n")
@@ -1223,7 +1223,7 @@ def write_stats_tex_question_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ):
 
     out_f.write(r"\addplot coordinates {" + "\n")
     for Qi in range(N_Q):
-        out_f.write(r"(%d,%g)" % (Qi + 1, (1 - Pbar_norm_Q[Qi]) * 100) + "\n")
+        out_f.write(r"(%d,%g)" % (Qi + 1, (1 - Phat_Q[Qi]) * 100) + "\n")
     out_f.write(r"};" + "\n")
 
     out_f.write(r"\addplot coordinates {" + "\n")
@@ -1243,7 +1243,7 @@ def write_stats_tex_question_summary_scatter(out_f, P_QV, Pbar_Q, P, P_s, P_sQ):
     Pmax_QV = P.max(axis=2)
     Pmax_Q = Pmax_QV.max(axis=1)
 
-    Pbar_norm_Q = Pbar_Q / Pmax_Q
+    Phat_Q = Pbar_Q / Pmax_Q
 
     d_Q = np.zeros(N_Q)
     for Qi in range(N_Q):
@@ -1265,7 +1265,7 @@ def write_stats_tex_question_summary_scatter(out_f, P_QV, Pbar_Q, P, P_s, P_sQ):
 
     out_f.write(r"\addplot coordinates {" + "\n")
     for Qi in range(N_Q):
-        out_f.write(r"(%g,%g) [%d]" % ((1 - Pbar_norm_Q[Qi]) * 100, d_Q[Qi] * 100, Qi + 1) + "\n")
+        out_f.write(r"(%g,%g) [%d]" % ((1 - Phat_Q[Qi]) * 100, d_Q[Qi] * 100, Qi + 1) + "\n")
     out_f.write(r"};" + "\n")
 
     out_f.write(r"\end{axis}" + "\n")
@@ -1321,11 +1321,20 @@ def write_stats_tex(output_filename, r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ, Pba
         out_f.write(r"\clearpage" + "\n")
         out_f.write(r"\section{Question summary data}" + "\n")
         out_f.write("\n")
+        out_f.write(r"\begin{center}" + "\n")
+        out_f.write(r"\begin{tabular}{lll}" + "\n")
+        out_f.write(r"quantity & symbol & description \\" + "\n")
+        out_f.write(r"\hline" + "\n")
+        out_f.write(r"difficulty & $D_{\rm Q}$ & one minus the normalized average score for the question \\" + "\n")
+        out_f.write(r"discrimination & $r^{\rm P}_{\rm Q}$ & correlation between per-student question score and total exam score" + "\n")
+        out_f.write(r"\end{tabular}" + "\n")
+        out_f.write(r"\end{center}" + "\n")
+        out_f.write("\n")
         write_stats_tex_question_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ)
         out_f.write(r"\vspace{1cm}" + "\n")
-        write_stats_tex_question_summary_scatter(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ)
-        out_f.write(r"\vspace{1cm}" + "\n")
         write_stats_tex_variant_summary(out_f, R_QV, n_s_QV)
+        out_f.write(r"\vspace{1cm}" + "\n")
+        write_stats_tex_question_summary_scatter(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ)
 
         out_f.write(r"\clearpage" + "\n")
         out_f.write(r"\section{Question detailed data}" + "\n")
