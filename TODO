@@ -16,3 +16,14 @@ output summary tex file showing question and student performance
 
 check that answers are distinct
 also check that question variants are distinct?
+
+More stats to report: m_{QVA}(q,v,a) = average score of all students
+answering $a$ for variant $v$ of question $q$. ?  Could also report
+m_{QVB}(q,v,b) = average score of all students getting question $q$,
+variant $v$ correct (if b=1) or incorrect (if b=0).
+
+Fix reporting with r_ai_ss.
+
+Integrate bad-key error reporting (closest Hamming match, best score match).
+
+For each question, plot average score of students in each quintile.
