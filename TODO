@@ -5,14 +5,7 @@ make webpage
 
 better warnings based on r_ai_ss
 
-output summary tex file showing question and student performance
-- mean, mode, std, N_exams, N_students
-- histogram of student total points P_s
-- histogram of points for each question (normalized by max points?) Pbar_Q
-- for each question:
-  - histogram showing answer choices (mark correct one somehow) R^a_QVA = n^a_QVA / n^s_QV
-  - variant ratios R_QV (not needed? can see from R^a_QVA?)
-- correlation between questions
+Plot correlation between questions.
 
 check that answers are distinct
 also check that question variants are distinct?
@@ -22,8 +15,4 @@ answering $a$ for variant $v$ of question $q$. ?  Could also report
 m_{QVB}(q,v,b) = average score of all students getting question $q$,
 variant $v$ correct (if b=1) or incorrect (if b=0).
 
-Fix reporting with r_ai_ss.
-
 Integrate bad-key error reporting (closest Hamming match, best score match).
-
-For each question, plot average score of students in each quintile.

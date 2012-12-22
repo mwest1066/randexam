@@ -8,7 +8,7 @@
 \begin{document}
 
 \title{Randomized Exam Generation and Grading\\[0.5em] Version 1.0.0}
-\author{Matt West}
+\author{M. West}
 \date{}
 \maketitle
 
@@ -32,10 +32,10 @@ permutation of the original answer order, so $A(e,q,a)$ is the library
 answer corresponding to exam answer $a$.
 
 We use capital letters for variables for quantities within the library
-and small letters for quantities within the randomly generated
-exams. Exams, questions, variants, and students are all numbered with
-Arabic numerals starting from 1. Answers are numbered with roman
-letters starting from A.
+and small letters for quantities within the randomly generated exams
+and students. Exams, questions, variants, and students are all
+numbered with Arabic numerals starting from 1. Answers are numbered
+with roman letters starting from A.
 
 Each randomly generated exam is identified by a \emph{key} $K(e)$ of
 length $N_{\rm K}$, which is a sequence of answers
@@ -57,6 +57,7 @@ In summary, the size variables used are:
     $N_{\rm A}$ & maximum number of answers per question \\
     $N_{\rm V}$ & maximum number of variants per question \\
     $N_{\rm s}$ & number of students (equal to the number of Scantron forms) \\
+    $N_{\rm g}$ & number of ranked groups of students for statistics generation \\
     $N_{\rm D}$ & number of answer-digits required to encode the exam number \\
     $N_{\rm K}$ & number of answer-digits in the exam key
   \end{tabular}
@@ -480,8 +481,12 @@ variants. Basic statistics for this assessment are listed below.
     & average points per student for question $Q$ \\
     $\bar{P}$ & 1
     & average points per student for entire exam \\
+    $P^{\rm max}_{\rm Q}(QV)$ & $N_{\rm Q} \times N_{\rm V}$
+    & maximum points available for variant $V$ of question $Q$ \\
     $P^{\rm max}_{\rm Q}(Q)$ & $N_{\rm Q}$
     & maximum points available for question $Q$ \\
+    $P^{\rm max}$ & $1$
+    & maximum points available for the entire exam \\
     $\hat{P}_{\rm Q}(Q)$ & $N_{\rm Q}$
     & normalized average points per student for question $Q$ \\
     $R_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
@@ -514,8 +519,7 @@ These quantities are computed by:
   n^{\rm a}_{\rm Q}(Q) &= \sum_{V = 1}^{N_{\rm V}} n^{\rm a}_{\rm QV}(Q,V) \displaybreak[0] \\
   r^{\rm a}_{\rm QVA}(Q,V,A) &= \frac{n^{\rm a}_{\rm QVA}(Q,V,A)}{n^{\rm s}_{\rm QV}(Q,V)} \displaybreak[0] \\
   r^{\rm na}_{\rm QV}(Q,V) &= \frac{n^{\rm na}_{\rm QV}(Q,V)}{n^{\rm s}_{\rm QV}(Q,V)} \displaybreak[0] \\
-  P_{\rm QV}(Q,V) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{N_{\rm Q}}
-  P_{\rm sq}(s,q)
+  P_{\rm QV}(\hat{Q},\hat{V}) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{N_{\rm Q}} P_{\rm sq}(s,q)
   \ \delta\Big(\hat{Q}, Q\big(e(s),q\big)\Big)
   \ \delta\Big(\hat{V}, V\big(e(s),q\big)\Big) \displaybreak[0] \\
   P_{\rm Q}(Q) &= \sum_{V = 1}^{N_{\rm V}} P_{\rm QV}(Q,V) \displaybreak[0] \\
@@ -523,8 +527,9 @@ These quantities are computed by:
   \bar{P}_{\rm Q}(Q) &= \frac{P_{\rm Q}(Q)}{N_{\rm s}} \displaybreak[0] \\
   \bar{P} &= \sum_{Q=1}^{N_{\rm Q}} \bar{P}_{\rm Q}(Q)
   = \frac{1}{N_{\rm s}} \sum_{s=1}^{N_{\rm s}} P_{\rm s}(s) \displaybreak[0] \\
-  P^{\rm max}_{\rm Q}(Q) &= \max_{\substack{V \in \{1,\ldots,N_{\rm V}\} \\ A \in \{1,\ldots,N_{\rm A}\}}}
-  P(Q,V,A) \displaybreak[0] \\
+  P^{\rm max}_{\rm QV}(Q,V) &= \max_{A \in \{1,\ldots,N_{\rm A}\}} P(Q,V,A) \displaybreak[0] \\
+  P^{\rm max}_{\rm Q}(Q) &= \max_{V \in \{1,\ldots,N_{\rm V}\}} P^{\rm max}_{\rm QV}(Q,V) \displaybreak[0] \\
+  P^{\rm max} &= \sum_{Q=1}^{N_{\rm Q}} P^{\rm max}_{\rm Q}(Q) \displaybreak[0] \\
   \hat{P}_{\rm Q}(Q) &= \frac{\bar{P}_{\rm Q}(Q)}{P^{\rm max}_{Q}(Q)} \displaybreak[0] \\
   R_{\rm QV}(Q,V) &= \frac{\bar{P}_{\rm QV}(Q,V)}{\bar{P}_{\rm Q}(Q)} \displaybreak[0] \\
   r^{\rm s}_{\rm QQ}(Q, \hat{Q}) &= \frac{\sum_{s=1}^{N_{\rm s}}
@@ -558,6 +563,47 @@ $r^{\rm ai}_{\rm ss}(s,\hat{s}) \approx 1/N_{\rm A}$ for $e(s) =
 e(\hat{s})$, indicating only random association between incorrect
 answers given by students with identical exams, although this may be
 legitimately higher due to correlations between student mistakes.
+
+To understand how students of different ability levels perform it is
+helpful to group students by their exam scores. We consider $N_{\rm
+  g}$ almost-equal-sized \emph{groups} of students, where all students
+in group $g$ perform worse than all students in group $g + 1$, etc. We
+can then compute the following per-group quantities:
+\begin{center}
+  \begin{tabular}{llp{9cm}}
+    array & dimensions & description \\
+    \hline
+    $s(r)$ & $N_{\rm s}$
+    & student number at rank $r$ \\
+    $g(s)$ & $N_{\rm g}$
+    & group number of student $s$ \\
+    $n^{\rm s}_{\rm g}(g)$ & $N_{\rm g}$
+    & number of students in group $g$ \\
+    $P_{\rm gQV}(g,Q,V)$ & $N_{\rm g} \times N_{\rm Q} \times N_{\rm V}$
+    & total points awarded for variant $V$ of question $Q$ to students in group $g$ \\
+    $P_{\rm gQ}(g,Q)$ & $N_{\rm g} \times N_{\rm Q}$
+    & total points awarded for question $Q$ to students in group $g$ \\
+    $\bar{P}_{\rm gQ}(g,Q)$ & $N_{\rm g} \times N_{\rm Q}$
+    & average points awarded for question $Q$ to students in group $g$ \\
+    $\hat{P}_{\rm gQ}(g,Q)$ & $N_{\rm g} \times N_{\rm Q}$
+    & normalized average points awarded for question $Q$ to students in group $g$
+  \end{tabular}
+\end{center}
+The definitions for the above quantities are:
+\begin{align}
+  P_{\rm s}\big(s(r)\big) &\le P_{\rm s}\big(s(r + 1)\big) \displaybreak[0] \\
+  g\big(s(r)\big) &= \left\lfloor \frac{(r - 1) \, N_{\rm g}}{N_{\rm s}}
+  \right\rfloor + 1 \displaybreak[0] \\
+  n^{\rm s}_{\rm g}(\hat{g}) &= \sum_{s=1}^{N_{\rm s}}
+  \delta\big(\hat{g}, g(s)\big) \displaybreak[0] \\
+  P_{\rm gQV}(\hat{g},\hat{Q},\hat{V}) &= \sum_{s=1}^{N_{\rm s}} \sum_{q=1}^{N_{\rm Q}}
+  P_{\rm sq}(s,q) \ \delta\big(\hat{g}, g(s)\big)
+  \ \delta\Big(\hat{Q}, Q\big(e(s),q\big)\Big)
+  \ \delta\Big(\hat{V}, V\big(e(s),q\big)\Big) \displaybreak[0] \\
+  P_{\rm gQ}(g,Q) &= \sum_{V=1}^{N_{\rm V}} P_{\rm gQV}(g,Q,V) \displaybreak[0] \\
+  \bar{P}_{\rm gQ}(g,Q) &= \frac{P_{\rm gQ}(g,Q)}{n^{\rm s}_{\rm g}(g)} \displaybreak[0] \\
+  \hat{P}_{\rm gQ}(g,Q) &= \frac{\bar{P}_{\rm gQ}(g,Q)}{P^{\rm max}_{\rm Q}(Q)}
+\end{align}
 
 \section{Implementation notes}
 
@@ -602,7 +648,7 @@ order, with least significant digit first, so for zero-based digits
 $K_i$ and zero-based indexes $i$ they are
 \begin{equation}
   K_i = \left\lfloor \frac{e}{(N_{\rm A})^i} \right\rfloor
-  \mod N_{\rm A}, \text{ for } i = 0,\ldots,(N_{\rm D} - 1)
+  \mod N_{\rm A}, \text{ for } i = 0,\ldots,(N_{\rm D} - 1).
 \end{equation}
 The checksum digits are the \emph{parity digit} $K_{\rm P}$, a
 \emph{Fletcher-type} checksum $K_{\rm F}$, and possibly a modified
