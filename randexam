@@ -572,9 +572,8 @@ def read_specs(input_filename):
             if i_row == 0:
                 continue # skip header
             if (len(row) - 2) % 3 != 0:
-                print("%s:%d: ERROR: expected 3N+2 items in row, got %d"
-                      % (input_filename, i_row + 1, len(row)))
-                sys.exit(1)
+                die("%s:%d: ERROR: expected 3N+2 items in row, got %d"
+                    % (input_filename, i_row + 1, len(row)))
             K_data.append(row[1])
             data = np.array(row[2:], dtype=object).reshape((-1, 3))
             Q_data.append([int(d) - 1 for d in data[:,0]])
@@ -830,8 +829,8 @@ def read_answers(input_filename):
             if i_row == 0:
                 continue # skip header
             if len(row) < 6:
-                print("%s:%d: ERROR: expected at least 6 items in row, got %d"
-                      (input_filename, i_row + 1, len(row)))
+                die("%s:%d: ERROR: expected at least 6 items in row, got %d"
+                    (input_filename, i_row + 1, len(row)))
             u_data.append(row[1:5])
             k_data.append(row[5])
             a_data.append(row[6:])
@@ -895,7 +894,7 @@ def generate_grades(P, K, Q, V, A, u, k, a, warnings=False):
                 Qi = Q[ei,qi]
                 Vi = V[ei,qi]
                 if ai >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
-                    P_seq[si,ei,qi] = P[Qi, Vi, Ai]
+                    P_seq[si,ei,qi] = P[Qi,Vi,Ai]
     P_se = P_seq.sum(axis=2)
     
     P_sq = np.zeros((N_s, N_Q))
@@ -1195,7 +1194,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             Qi = Q[ei,qi]
             Vi = V[ei,qi]
             if ei >= 0 and Qi >= 0 and Vi >= 0:
-                n_s_QV[Qi, Vi] += 1
+                n_s_QV[Qi,Vi] += 1
     write_csv(output_prefix + "_n_s_QV.csv", ["Q", "n_s(Q,V=%d)"], n_s_QV)
 
     n_a_QVA = np.zeros((N_Q, N_V, N_A), dtype=int)
@@ -1207,7 +1206,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             Qi = Q[ei,qi]
             Vi = V[ei,qi]
             if ei >= 0 and Ai >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
-                n_a_QVA[Qi, Vi, Ai] += 1
+                n_a_QVA[Qi,Vi,Ai] += 1
     write_csv(output_prefix + "_n_a_QVA.csv", ["Q", "V", "n_a(Q,V,A=%s)"], n_a_QVA,
               index_formats=['i', 'i', 'c'])
 
@@ -1242,7 +1241,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             Qi = Q[ei,qi]
             Vi = V[ei,qi]
             if ei >= 0 and Qi >= 0 and Vi >= 0:
-                P_QV[Qi, Vi] += P_sq[si,qi]
+                P_QV[Qi,Vi] += P_sq[si,qi]
     write_csv(output_prefix + "_P_QV.csv", ["Q", "P(Q,V=%d)"], P_QV)
 
     P_Q = P_QV.sum(axis=1)
@@ -1263,12 +1262,13 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     R_QV_threshold_low = 0.8
     for Qi in range(N_Q):
         for Vi in range(N_V):
-            if R_QV[Qi,Vi] > R_QV_threshold_high:
-                log_and_print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually high"
-                              % (Qi, Vi, R_QV[Qi,Vi]))
-            if R_QV[Qi,Vi] < R_QV_threshold_low:
-                log_and_print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually low"
-                              % (Qi, Vi, R_QV[Qi,Vi]))
+            if n_s_QV[Qi,Vi] > 0:
+                if R_QV[Qi,Vi] > R_QV_threshold_high:
+                    log_and_print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually high"
+                                  % (Qi + 1, Vi + 1, R_QV[Qi,Vi]))
+                if R_QV[Qi,Vi] < R_QV_threshold_low:
+                    log_and_print("WARNING: R_QV(Q=%d,V=%d) = %f is unusually low"
+                                  % (Qi + 1, Vi + 1, R_QV[Qi,Vi]))
 
     r_s_QQ = np.corrcoef(P_sQ.transpose())
     write_csv(output_prefix + "_r_s_QQ.csv", ["Q1", "r_s(Q1,Q2=%d)"], r_s_QQ)
@@ -1303,7 +1303,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
                     and r_ai_ss[si,sj] > r_ai_ss_threshold \
                     and n_ai_ss[si,sj] > n_ai_ss_threshold:
                 log_and_print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
-                              % (si, sj, r_ai_ss[si,sj], si, sj, n_ai_ss[si,sj]))
+                              % (si + 1, sj + 1, r_ai_ss[si,sj], si + 1, sj + 1, n_ai_ss[si,sj]))
 
     write_stats_tex(output_prefix + ".tex", r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ)
 
