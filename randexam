@@ -72,7 +72,8 @@ def main():
         check_key_distances(K)
         write_specs(SPECS_FILENAME, K, Q, V, A)
         write_exams(EXAMS_FILENAME, library, K, Q, V, A)
-        write_solutions(SOLUTIONS_FILENAME, library, K, Q, V, C)
+        c = generate_solutions(Q, V, A, C)
+        write_solutions(SOLUTIONS_FILENAME, K, c)
     elif sys.argv[1] == "proc-scan":
         init_logging(LOG_PROC_SCAN_FILENAME)
         log_and_print("randexam version %s" % VERSION)
@@ -719,15 +720,29 @@ def write_exams(output_filename, library, K, Q, V, A):
 ######################################################################
 ######################################################################
 
-def write_solutions(output_filename, library, K, Q, V, C):
+def generate_solutions(Q, V, A, C):
+    log_and_print("Generating solutions")
+    (N_e, N_Q, N_V) = A.shape
+
+    c = np.zeros((N_e, N_Q), dtype=int)
+    for ei in range(N_e):
+        for qi in range(N_Q):
+            for ai in range(N_A):
+                if A[ei,qi,ai] == C[Q[ei,qi], V[ei,qi]]:
+                    c[ei,qi] = ai
+    log_array(c, "c", ["N_e", "N_Q"])
+    log("Successfully completed generating solutions")
+    return c
+
+def write_solutions(output_filename, K, c):
     log_and_print("Writing solutions to file: %s" % output_filename)
-    (N_e, N_Q) = Q.shape
+    (N_e, N_Q) = c.shape
 
     with open(output_filename, "w") as out_f:
         writer = csv.writer(out_f)
-        writer.writerow(["e", "K(e)"] + ["C(e,q=%d)" % (q + 1) for q in range(N_Q)])
-        for e in range(N_e):
-            writer.writerow([e + 1, K[e]] + [C[Q[e,q], V[e,q]] for q in range(N_Q)])
+        writer.writerow(["e", "K(e)"] + ["c(e,q=%d)" % (qi + 1) for qi in range(N_Q)])
+        for ei in range(N_e):
+            writer.writerow([ei + 1, K[ei]] + [ind2chr(c[ei,qi]) for qi in range(N_Q)])
     log("Successfully completed writing solutions to file")
 
 ######################################################################

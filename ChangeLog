@@ -9,6 +9,8 @@
 
   * Output TeX statistics file.
 
+  * Fix solutions.csv output.
+
 1.0.0 - 2012-12-18
 
   * Initial release.
