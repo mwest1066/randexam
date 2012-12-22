@@ -451,7 +451,7 @@ As well as computing the scores for each student, we can assess how
 the students as a group performed on the different questions and
 variants. Basic statistics for this assessment are listed below.
 \begin{center}
-  \begin{tabular}{lll}
+  \begin{tabular}{llp{9cm}}
     array & dimensions & description \\
     \hline
     $n^{\rm s}_{\rm e}(e)$ & $N_{\rm e}$
@@ -466,12 +466,10 @@ variants. Basic statistics for this assessment are listed below.
     & number of students not giving an answer for variant $V$ of question $Q$ \\
     $n^{\rm a}_{\rm Q}(Q)$ & $N_{\rm Q}$
     & number of students giving an answer for question $Q$ \\
-
     $r^{\rm a}_{\rm QVA}(Q,V,A)$ & $N_{\rm Q} \times N_{\rm V} \times N_{\rm A}$
     & fraction of students giving answer $A$ for variant $V$ of question $Q$ \\
     $r^{\rm na}_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
     & fraction of students not giving an answer for variant $V$ of question $Q$ \\
-
     $P_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
     & total points awarded for variant $V$ of question $Q$ \\
     $P_{\rm Q}(Q)$ & $N_{\rm Q}$
@@ -480,6 +478,12 @@ variants. Basic statistics for this assessment are listed below.
     & average points per student for variant $V$ of question $Q$ \\
     $\bar{P}_{\rm Q}(Q)$ & $N_{\rm Q}$
     & average points per student for question $Q$ \\
+    $\bar{P}$ & 1
+    & average points per student for entire exam \\
+    $P^{\rm max}_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & maximum points available for question $Q$ \\
+    $\hat{P}_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & normalized average points per student for question $Q$ \\
     $R_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
     & ratio of average points for variant $V$ to average for question $Q$ \\
     $r^{\rm s}_{QQ}(Q,\hat{Q})$ & $N_{\rm Q} \times N_{\rm Q}$
@@ -489,7 +493,11 @@ variants. Basic statistics for this assessment are listed below.
     $n^{\rm ai}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
     & number of mutually incorrect exam answers for students $s$ and $\hat{s}$ \\
     $r^{\rm ai}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
-    & proportion of identical incorrect answers for students $s$ and $\hat{s}$
+    & proportion of identical incorrect answers for students $s$ and $\hat{s}$ \\
+    $D_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & ``difficulty'' of question $Q$ (one minus normalized averaged points $\hat{P}_{\rm Q}(Q)$) \\
+    $r^{\rm P}_{\rm Q}(Q)$ & $N_{\rm Q}$
+    & ``discrimination'' of question $Q$ (correlation coefficient of $P_{\rm s}(s)$ and $P_{\rm sQ}(s,Q)$)
   \end{tabular}
 \end{center}
 These quantities are computed by:
@@ -513,6 +521,11 @@ These quantities are computed by:
   P_{\rm Q}(Q) &= \sum_{V = 1}^{N_{\rm V}} P_{\rm QV}(Q,V) \displaybreak[0] \\
   \bar{P}_{\rm QV}(Q,V) &= \frac{P_{\rm QV}(Q,V)}{n^{\rm s}_{\rm QV}(Q,V)} \displaybreak[0] \\
   \bar{P}_{\rm Q}(Q) &= \frac{P_{\rm Q}(Q)}{N_{\rm s}} \displaybreak[0] \\
+  \bar{P} &= \sum_{Q=1}^{N_{\rm Q}} \bar{P}_{\rm Q}(Q)
+  = \frac{1}{N_{\rm s}} \sum_{s=1}^{N_{\rm s}} P_{\rm s}(s) \displaybreak[0] \\
+  P^{\rm max}_{\rm Q}(Q) &= \max_{\substack{V \in \{1,\ldots,N_{\rm V}\} \\ A \in \{1,\ldots,N_{\rm A}\}}}
+  P(Q,V,A) \displaybreak[0] \\
+  \hat{P}_{\rm Q}(Q) &= \frac{\bar{P}_{\rm Q}(Q)}{P^{\rm max}_{Q}(Q)} \displaybreak[0] \\
   R_{\rm QV}(Q,V) &= \frac{\bar{P}_{\rm QV}(Q,V)}{\bar{P}_{\rm Q}(Q)} \displaybreak[0] \\
   r^{\rm s}_{\rm QQ}(Q, \hat{Q}) &= \frac{\sum_{s=1}^{N_{\rm s}}
     (P_{sQ}(s,Q) - \bar{P}_Q(Q)) (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))
@@ -528,7 +541,13 @@ These quantities are computed by:
   \ \delta\big(0, P_{\rm sq}(\hat{s},q)\big) \displaybreak[0] \\
   r^{\rm ai}_{\rm ss}(s,\hat{s}) &= \frac{1}{n^{\rm ai}_{\rm ss}(s,\hat{s})} \sum_{q = 1}^{N_{\rm Q}}
   \delta\big(a(s,q), a(\hat{s},q)\big)
-  \ \delta\big(0, P_{\rm sq}(s,q)\big) \ \delta\big(0, P_{\rm sq}(\hat{s},q)\big)
+  \ \delta\big(0, P_{\rm sq}(s,q)\big) \ \delta\big(0, P_{\rm sq}(\hat{s},q)\big) \displaybreak[0] \\
+  D_{\rm Q}(Q) &= 1 - \hat{P}_{\rm Q}(Q) \displaybreak[0] \\
+  r^{\rm P}_{\rm Q}(Q) &= \frac{\sum_{s=1}^{N_{\rm s}}
+    (P_{sQ}(s,Q) - \bar{P}_Q(Q)) (P_{s}(s) - \bar{P})
+  }{
+    \sqrt{\sum_{s=1}^{N_{\rm s}} (P_{sQ}(s,Q) - \bar{P}_Q(Q))^2}
+    \sqrt{\sum_{s=1}^{N_{\rm s}} (P_{s}(s) - \bar{P})^2}}
 \end{align}
 where $\delta(x,y)$ is the Kronecker delta function, equal to one with
 equal arguments and zero otherwise.

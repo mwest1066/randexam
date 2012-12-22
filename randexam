@@ -437,7 +437,7 @@ def extract_points(library, N_A):
     N_Q = len(flat_questions)
     N_V = max([len(q.variants) for q in flat_questions])
 
-    P = np.zeros((N_Q, N_V, N_A), dtype=float)
+    P = np.zeros((N_Q, N_V, N_A))
     C = np.zeros((N_Q, N_V), dtype=str)
 
     for Qi in range(N_Q):
@@ -1106,11 +1106,11 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
             spec_rQ[ri,Qi] = (ri - 1 - n_sb_rQ[ri,Qi]) / float(N_s - X[:,Qi].sum())
 
     N_g = 5
-    g = np.zeros(N_s, int)
+    g = np.zeros(N_s, dtype=int)
     for si in range(N_s):
         g[s[si]] = int(si / float(N_s) * N_g)
 
-    n_s_g = np.zeros(N_g, int)
+    n_s_g = np.zeros(N_g, dtype=int)
     for si in range(N_s):
         n_s_g[g[si]] += 1
 
@@ -1144,14 +1144,14 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
         out_f.write(r"\noindent" + "\n")
         out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
 
-        width = 9.5
+        width = 9
         out_f.write(r"\begin{tikzpicture}[baseline]" + "\n")
         out_f.write(r"\begin{axis}[" + "\n")
-        out_f.write(r"title={Question %d}," % (Qi + 1) + "\n")
+        out_f.write(r"title={Question $Q = %d$}," % (Qi + 1) + "\n")
         out_f.write(r"ybar, ymin=0, ymax=100," + "\n")
         out_f.write(r"width=%gcm, height=4cm," % width+ "\n")
-        out_f.write(r"xlabel={answer}," + "\n")
-        out_f.write(r"ylabel={student fraction / \%}," + "\n")
+        out_f.write(r"xlabel={answer $A$}," + "\n")
+        out_f.write(r"ylabel={\parbox{9em}{\centering fraction of students \\ $r^a_{\rm QVA}(Q,V,A)$ / \%}}," + "\n")
         out_f.write(r"symbolic x coords={A,B,C,D,E,none}," + "\n")
         out_f.write(r"xtick=data," + "\n")
         out_f.write(r"ymajorgrids=true," + "\n")
@@ -1170,7 +1170,7 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
                 out_f.write(r"(%s,%g) [%g]" % (ind2chr(Ai), r_a_QVA[Qi,Vi,Ai] * 100, P[Qi,Vi,Ai]) + "\n")
             out_f.write(r"(none,%g) [0]" % (r_na_QV[Qi,Vi] * 100) + "\n")
             out_f.write(r"};" + "\n")
-        out_f.write(r"\legend{%s};" % ",".join(["V%d" % (Vi + 1) for Vi in range(N_V) if n_s_QV[Qi,Vi] > 0]) + "\n")
+        out_f.write(r"\legend{%s};" % ",".join(["$V = %d$" % (Vi + 1) for Vi in range(N_V) if n_s_QV[Qi,Vi] > 0]) + "\n")
         out_f.write(r"\end{axis}" + "\n")
         out_f.write(r"\end{tikzpicture}" + "\n")
 
@@ -1184,8 +1184,8 @@ def write_stats_tex_question_answers(out_f, r_a_QVA, r_na_QV, n_s_QV, P, P_s, P_
         out_f.write(r"width=%gcm, height=4cm," % width + "\n")
         out_f.write(r"symbolic x coords={%s}," % ",".join(["%d" % (gi + 1) for gi in range(N_g)]) + "\n")
         out_f.write(r"xtick=data," + "\n")
-        out_f.write(r"xlabel={ranked group}," + "\n")
-        out_f.write(r"ylabel={normalized score / \%}," + "\n")
+        out_f.write(r"xlabel={ranked group $g$}," + "\n")
+        out_f.write(r"ylabel={\parbox{9em}{\centering fraction of students \\ $r^a_{\rm QVA}(Q,V,A)$ / \%}}," + "\n")
         out_f.write(r"ymajorgrids=true," + "\n")
         out_f.write(r"enlarge x limits=0.12," + "\n")
         out_f.write(r"bar width=%gcm," % (width / float(N_g) / 3) + "\n")
@@ -1251,7 +1251,7 @@ def write_stats_tex_question_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ):
     out_f.write(r"ybar, ymin=0," + "\n")
     out_f.write(r"xmin=1, xmax=%d," % N_Q + "\n")
     out_f.write(r"width=14cm, height=8cm," + "\n")
-    out_f.write(r"xlabel={question number}," + "\n")
+    out_f.write(r"xlabel={question number $Q$}," + "\n")
     out_f.write(r"ylabel={quantity / \%}," + "\n")
     out_f.write(r"ymajorgrids=true," + "\n")
     out_f.write(r"enlarge x limits=0.02," + "\n")
@@ -1269,12 +1269,12 @@ def write_stats_tex_question_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ):
         out_f.write(r"(%d,%g)" % (Qi + 1, d_Q[Qi] * 100) + "\n")
     out_f.write(r"};" + "\n")
 
-    out_f.write(r"\legend{difficulty,discrimination};" + "\n")
+    out_f.write(r"\legend{difficulty $D_{\rm Q}(Q)$,discrimination $r^{\rm P}_{\rm Q}(Q)$};" + "\n")
     out_f.write(r"\end{axis}" + "\n")
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
-def write_stats_tex_question_summary_scatter(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ):
+def write_stats_tex_question_summary_scatter(out_f, P_QV, Pbar_Q, P, P_s, P_sQ):
     (N_Q, N_V, N_A) = P.shape
     N_s = P_s.shape[0]
 
@@ -1292,8 +1292,8 @@ def write_stats_tex_question_summary_scatter(out_f, Pbar_QV, Pbar_Q, P, P_s, P_s
     out_f.write(r"xmin=0, ymin=0," + "\n")
     out_f.write(r"width=14cm, height=14cm," + "\n")
     out_f.write(r"only marks," + "\n")
-    out_f.write(r"xlabel={difficulty / \%}," + "\n")
-    out_f.write(r"ylabel={discrimination / \%}," + "\n")
+    out_f.write(r"xlabel={difficulty $D_{\rm Q}(Q)$ / \%}," + "\n")
+    out_f.write(r"ylabel={discrimination $r^{\rm P}_{\rm Q}(Q)$ / \%}," + "\n")
     out_f.write(r"xmajorgrids=true," + "\n")
     out_f.write(r"ymajorgrids=true," + "\n")
     out_f.write(r"nodes near coords," + "\n")
@@ -1310,21 +1310,16 @@ def write_stats_tex_question_summary_scatter(out_f, Pbar_QV, Pbar_Q, P, P_s, P_s
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
-def write_stats_tex_variant_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ, n_s_QV):
-    (N_Q, N_V, N_A) = P.shape
-    N_s = P_s.shape[0]
-
-    Pbar_rel_QV = np.zeros((N_Q, N_V))
-    for Qi in range(N_Q):
-        Pbar_rel_QV[Qi,:] = Pbar_QV[Qi,:] / Pbar_Q[Qi]
+def write_stats_tex_variant_summary(out_f, R_QV, n_s_QV):
+    (N_Q, N_V) = R_QV.shape
 
     out_f.write(r"\begin{tikzpicture}" + "\n")
     out_f.write(r"\begin{axis}[" + "\n")
     out_f.write(r"only marks," + "\n")
     out_f.write(r"xmin=1, xmax=%d," % N_Q + "\n")
     out_f.write(r"width=13cm, height=8cm," + "\n")
-    out_f.write(r"ylabel={relative points awarded / \%}," + "\n")
-    out_f.write(r"xlabel={question number}," + "\n")
+    out_f.write(r"ylabel={relative points awarded $R_{\rm QV}(Q,V)$ / \%}," + "\n")
+    out_f.write(r"xlabel={question number $Q$}," + "\n")
     out_f.write(r"xmajorgrids=true," + "\n")
     out_f.write(r"ymajorgrids=true," + "\n")
     out_f.write(r"enlarge x limits=0.02," + "\n")
@@ -1335,15 +1330,15 @@ def write_stats_tex_variant_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ, n_s_QV
         out_f.write(r"\addplot coordinates {" + "\n")
         for Qi in range(N_Q):
             if n_s_QV[Qi,Vi] > 0:
-                out_f.write(r"(%d,%g)" % (Qi + 1, Pbar_rel_QV[Qi,Vi] * 100) + "\n")
+                out_f.write(r"(%d,%g)" % (Qi + 1, R_QV[Qi,Vi] * 100) + "\n")
         out_f.write(r"};" + "\n")
 
-    out_f.write(r"\legend{%s};" % ",".join(["V%d" % (Vi + 1) for Vi in range(N_V)]) + "\n")
+    out_f.write(r"\legend{%s};" % ",".join(["$V = %d$" % (Vi + 1) for Vi in range(N_V)]) + "\n")
     out_f.write(r"\end{axis}" + "\n")
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
-def write_stats_tex(output_filename, r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ, Pbar_QV, Pbar_Q, e, Q, V, P_sq):
+def write_stats_tex(output_filename, r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ, Pbar_QV, Pbar_Q, e, Q, V, P_sq, R_QV):
     log_and_print("Writing statistics tex file: %s" % output_filename)
     with open(output_filename, "w") as out_f:
         out_f.write(r"\documentclass{article}" + "\n")
@@ -1368,7 +1363,7 @@ def write_stats_tex(output_filename, r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ, Pba
         out_f.write(r"\vspace{1cm}" + "\n")
         write_stats_tex_question_summary_scatter(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ)
         out_f.write(r"\vspace{1cm}" + "\n")
-        write_stats_tex_variant_summary(out_f, Pbar_QV, Pbar_Q, P, P_s, P_sQ, n_s_QV)
+        write_stats_tex_variant_summary(out_f, R_QV, n_s_QV)
 
         out_f.write(r"\clearpage" + "\n")
         out_f.write(r"\section{Question detailed data}" + "\n")
@@ -1490,7 +1485,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
                     n_ai_ss[si,sj] += 1
     write_csv(output_prefix + "_n_ai_ss.csv", ["s1", "n_ai(s1,s2=%d)"], n_ai_ss)
 
-    r_ai_ss = np.zeros((N_s, N_s), dtype=float)
+    r_ai_ss = np.zeros((N_s, N_s))
     for si in range(N_s):
         for sj in range(N_s):
             for qi in range(N_Q):
@@ -1509,7 +1504,7 @@ def generate_and_write_statistics(output_prefix, P, K, Q, V, A, u, k, a):
                 log_and_print("WARNING: r_ai_ss(s1=%d,s2=%d) = %f too high, with n_ai_ss(s1=%d,s2=%d) = %d"
                               % (si + 1, sj + 1, r_ai_ss[si,sj], si + 1, sj + 1, n_ai_ss[si,sj]))
 
-    write_stats_tex(output_prefix + ".tex", r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ, Pbar_QV, Pbar_Q, e, Q, V, P_sq)
+    write_stats_tex(output_prefix + ".tex", r_a_QVA, r_na_QV, n_s_QV, P_s, P, P_sQ, Pbar_QV, Pbar_Q, e, Q, V, P_sq, R_QV)
 
     log("Successfully completed generating and writing statistics")
 
