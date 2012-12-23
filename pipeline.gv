@@ -14,8 +14,9 @@ digraph partmc_modules {
     specs [label="specs.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
     points [label="points.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
     answers [label="answers.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
-    grades [label="grades.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
-    stats [label="stats_*.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    scores [label="scores.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    stats [label="stats.tex", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
+    statsdata [label="stats_*.csv", fontname=Courier, shape=box, style=filled, fillcolor=lavender];
 
     proc_lib [label="randexam proc-lib", fontname=Courier, shape=ellipse, style=filled, fillcolor=cornsilk1];
     proc_scan [label="randexam proc-scan", fontname=Courier, shape=ellipse, style=filled, fillcolor=cornsilk1];
@@ -28,5 +29,5 @@ digraph partmc_modules {
     { scantron; specs } -> proc_scan
     proc_scan -> answers
     { specs ; answers; points } -> proc_ans
-    proc_ans -> { grades; stats }
+    proc_ans -> { scores; stats; statsdata }
 }

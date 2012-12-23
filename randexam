@@ -28,7 +28,7 @@ SOLUTIONS_FILENAME = FILENAME_PREFIX + "solutions.csv"
 SPECS_FILENAME = FILENAME_PREFIX + "specs.csv"
 POINTS_FILENAME = FILENAME_PREFIX + "points.csv"
 ANSWERS_FILENAME = FILENAME_PREFIX + "answers.csv"
-GRADES_FILENAME = FILENAME_PREFIX + "grades.csv"
+SCORES_FILENAME = FILENAME_PREFIX + "scores.csv"
 STATS_FILENAME = FILENAME_PREFIX + "stats.tex"
 RAW_STATS_PREFIX = FILENAME_PREFIX + "stats"
 
@@ -52,7 +52,7 @@ def main():
         print("<command> is:")
         print("   proc-lib     process the library and generate exams")
         print("   proc-scan    process and unscramble the scantron file")
-        print("   proc-ans     process the answer file to produce grades")
+        print("   proc-ans     process the answer file to produce scores")
         sys.exit(0)
 
     if sys.argv[1] == "proc-lib":
@@ -88,8 +88,8 @@ def main():
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         (u, k, a) = read_answers(ANSWERS_FILENAME)
         P = read_points(POINTS_FILENAME)
-        d = generate_grades_and_statistics(RAW_STATS_PREFIX, P, K, Q, V, A, u, k, a)
-        write_grades(GRADES_FILENAME, u, d.P_s)
+        d = generate_scores_and_statistics(RAW_STATS_PREFIX, P, K, Q, V, A, u, k, a)
+        write_scores(SCORES_FILENAME, u, d.P_s)
         write_statistics(STATS_FILENAME, d)
     else:
         print("ERROR: unrecognized command: %s" % sys.argv[1])
@@ -978,13 +978,13 @@ def keys_to_exams(K, k, u):
     log("Successfully completed matching keys to exams")
     return e
 
-def generate_grades(P, K, Q, V, A, u, k, a):
-    """(e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_grades(P, K, Q, V, A, u, k, a)
+def generate_scores(P, K, Q, V, A, u, k, a):
+    """(e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, a)
 
-    Generate the grade arrays from the exam specifications and the
+    Generate the score arrays from the exam specifications and the
     student answer data.
     """
-    log_and_print("Generating grades")
+    log_and_print("Generating scores")
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
     N_e = K.shape[0]
@@ -1040,7 +1040,7 @@ def generate_grades(P, K, Q, V, A, u, k, a):
     log_array(P_sq, "P_sq", ["N_s", "N_Q"])
     log_array(P_s, "P_s", ["N_s"])
     log_array(P_sQ, "P_sQ", ["N_s", "N_Q"])
-    log("Successfully completed generating grades")
+    log("Successfully completed generating scores")
     return (e, P_seq, P_se, P_sq, P_s, P_sQ)
 
 def write_csv(output_filename, headers, data, index_formats=None):
@@ -1101,8 +1101,8 @@ def write_halfviz(output_filename, data, threshold):
                     out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
     log("Successfully completed writing graph file")
 
-def generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
-    """d = generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a)
+def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
+    """d = generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a)
 
     d is a structure containing all data arrays and all generated
     statistics arrays.
@@ -1110,7 +1110,7 @@ def generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     Statistics arrays are output to individual files with the given
     output_prefix.
     """
-    log_and_print("Generating grades and statistics")
+    log_and_print("Generating scores and statistics")
     d = Struct()
 
     (d.N_Q, d.N_V, d.N_A) = P.shape
@@ -1125,7 +1125,7 @@ def generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.u = u
     d.k = k
     d.a = a
-    (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_grades(P, K, Q, V, A, u, k, a)
+    (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_scores(P, K, Q, V, A, u, k, a)
 
     d.n_s_e = np.zeros(d.N_e, dtype=int)
     for ei in range(d.N_e):
@@ -1319,18 +1319,18 @@ def generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             d.Phat_gQ[gi,Qi] = d.Pbar_gQ[gi,Qi] / d.P_max_Q[Qi]
     write_csv(output_prefix + "_Phat_gQ.csv", ["g", "Phat(g,Q=%d)"], d.Phat_gQ)
 
-    log("Successfully completed generating grades and statistics")
+    log("Successfully completed generating scores and statistics")
     return d
 
 ######################################################################
 ######################################################################
 
-def write_grades(output_filename, u, P_s):
-    """write_grades(output_filename, u, P_s)
+def write_scores(output_filename, u, P_s):
+    """write_scores(output_filename, u, P_s)
 
-    Write the final exam grades to grades.csv.
+    Write the final exam scores to scores.csv.
     """
-    log_and_print("Writing grades to file: %s" % output_filename)
+    log_and_print("Writing scores to file: %s" % output_filename)
     N_s = u.shape[0]
 
     with open(output_filename, 'w') as out_f:
@@ -1338,7 +1338,7 @@ def write_grades(output_filename, u, P_s):
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "P_s(s)"])
         for si in range(N_s):
             writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], P_s[si]])
-    log("Successfully completed writing grades to file")
+    log("Successfully completed writing scores to file")
 
 ######################################################################
 ######################################################################

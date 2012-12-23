@@ -370,7 +370,7 @@ student number $u(2,3) = 795969582$, and the NetID $u(2,4) =
 the student gave answer $a(2,1) = \rm B$ for question 1 on this exam
 paper, answer $a(2,2) = \rm E$ for question 2, etc.
 
-\subsection{\texttt{grades.csv}}
+\subsection{\texttt{scores.csv}}
 
 This file encodes the array $P_{\rm se}(s)$ described in
 Section~\ref{sec:grading}. For reference, the student number and
@@ -383,6 +383,12 @@ s,Name,Initial,Number,NetID,P_s(s)
 \end{verbatim}
 Here we see that both students have total points $P_{\rm s}(1) =
 P_{\rm s}(2) = 2.0$.
+
+\subsection{\texttt{stats.tex}}
+
+This file presents various summary statistics relating to the student
+and question performance in the exam. It should be processed with
+\texttt{pdflatex} to produce the output \texttt{stats.pdf} file.
 
 \subsection{\texttt{stats\underline{ }*.csv}}
 
@@ -418,13 +424,13 @@ actually took. To make this clear, we consider the arrays
     array & dimensions & description \\
     \hline
     $P_{\rm seq}(s,e,q)$ & $N_{\rm s} \times N_{\rm e} \times N_{\rm Q}$
-    & points awarded to student $s$ on question $q$ graded for exam $e$ \\
+    & points awarded to student $s$ on question $q$ scored for exam $e$ \\
     $P_{\rm se}(s,e)$ & $N_{\rm s} \times N_{\rm e}$
-    & total points awarded to student $s$ graded for exam $e$ \\
+    & total points awarded to student $s$ scored for exam $e$ \\
     $P_{\rm sq}(s,q)$ & $N_{\rm s} \times N_{\rm Q}$
     & points award to student $s$ on question $q$ using the correct exam \\
     $P_{\rm s}(s)$ & $N_{\rm s}$
-    & total points awarded to student $s$ graded using the correct exam \\
+    & total points awarded to student $s$ scored using the correct exam \\
     $P_{sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
     & points awarded to student $s$ for library question $Q$ \\
   \end{tabular}
