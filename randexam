@@ -142,6 +142,8 @@ def log_array(arr, arr_name, dim_names):
 ######################################################################
 
 class Struct(object):
+    """Generic structure object.
+    """
     def __init__(self):
         pass
 
@@ -149,6 +151,8 @@ class Struct(object):
 ######################################################################
 
 class Library:
+    """Data contained in the library.tex file.
+    """
     def __init__(self):
         self.coverpage = ""
         self.zones = []
@@ -185,12 +189,26 @@ class Answer:
         self.scantron_answers = 0
 
 class LibraryRegexp:
+    """A regexp for parsing library.tex.
+
+    name is used to specify which rule matched
+    regexp is the actual regular expression for the line
+    no_tail indicates whether trailing text after the regexp is permitted
+    """
     def __init__(self, name, regexp, no_tail=False):
         self.name = name
         self.regexp = regexp
         self.no_tail = no_tail
 
 class ReadState:
+    """The current state in the state machine used to parse library.tex.
+
+    name is the state name
+
+    zone, question, variant, and answer are the current objects of the
+    relevant type. These are added to as new lines are read from the
+    file.
+    """
     def __init__(self):
         self.name = "preamble"
         self.zone = Zone()
@@ -229,6 +247,11 @@ def chr2ind(char):
 ######################################################################
 
 def read_library(input_filename):
+    """library = read_library(input_filename)
+
+    Reads the library.tex file and returns a tree of
+    Library()/Zone()/Question()/Variant()/Answer() objects.
+    """
     log_and_print("Reading library file: %s" % input_filename)
     try:
         input_file = open(input_filename, "r")
@@ -379,6 +402,11 @@ def read_library(input_filename):
     return library
 
 def check_library(library):
+    """check_library(library)
+
+    Check that the given Library object is valid, printing errors and
+    exiting if any problems are found.
+    """
     log_and_print("Checking library data")
     errors = []
     if len(library.zones) == 0:
@@ -463,6 +491,10 @@ def extract_points(library, N_A):
     return (P, C)
 
 def write_points(output_filename, P):
+    """write_points(output_filename, P)
+
+    Write the given points array to the points.csv file.
+    """
     log_and_print("Writing points file: %s" % output_filename)
     (N_Q, N_V, N_A) = P.shape
     with open(output_filename, 'w') as out_f:
@@ -475,6 +507,10 @@ def write_points(output_filename, P):
     log("Successfully completed writing points file")
 
 def read_points(input_filename):
+    """P = read_points(input_filename)
+
+    Read the P array from the points.csv file.
+    """
     log_and_print("Reading points data from file: %s" % input_filename)
     Q_data = []
     V_data = []
@@ -554,6 +590,10 @@ def generate_specs(library, N_e, N_A):
     return (K, Q, V, A)
 
 def write_specs(output_filename, K, Q, V, A):
+    """write_specs(output_filename, K, Q, V, A)
+
+    Write the specifications for the generated exams to the specs.csv file.
+    """
     log_and_print("Writing exam specs to file: %s" % output_filename)
     (N_e, N_Q) = Q.shape
     with open(output_filename, 'w') as out_f:
@@ -570,6 +610,10 @@ def write_specs(output_filename, K, Q, V, A):
     log("Successfully completed writing exam specs to file")
 
 def read_specs(input_filename):
+    """(K, Q, V, A) = read_specs(input_filename)
+
+    Read the exam specifications from the specs.csv file.
+    """
     log_and_print("Reading exam specifications from file: %s" % input_filename)
     K_data = []
     Q_data = []
@@ -674,6 +718,10 @@ def check_key_distances(K):
 ######################################################################
 
 def write_exams(output_filename, library, K, Q, V, A):
+    """write_exams(output_filename, library, K, Q, V, A)
+
+    Write the generated exams to the exams.tex file.
+    """
     log_and_print("Writing randomized exams to file: %s" % output_filename)
     (N_e, N_Q, N_A) = A.shape
 
@@ -729,6 +777,10 @@ def write_exams(output_filename, library, K, Q, V, A):
 ######################################################################
 
 def generate_solutions(Q, V, A, C):
+    """c = generate_solutions(Q, V, A, C)
+
+    Compute the per-exam solutions c from the exam specificiations.
+    """
     log_and_print("Generating solutions")
     (N_e, N_Q, N_V) = A.shape
 
@@ -743,6 +795,10 @@ def generate_solutions(Q, V, A, C):
     return c
 
 def write_solutions(output_filename, K, c):
+    """write_solutions(output_filename, K, c)
+
+    Write the solutions file solutions.csv.
+    """
     log_and_print("Writing solutions to file: %s" % output_filename)
     (N_e, N_Q) = c.shape
 
@@ -757,6 +813,14 @@ def write_solutions(output_filename, K, c):
 ######################################################################
 
 def read_scantrons(input_filename, N_e, N_Q, N_A):
+    """(u, k, a) = read_scantrons(input_filename, N_e, N_Q, N_A)
+
+    Read the scantron data arrays from scantron.dat.
+
+    u[s,i] = student s: last name, first initial, ID number, NetID (i = 0,...,3)
+    k[s] = exam key for student s
+    a[s,q] = answer given by student s to exam question q
+    """
     log_and_print("Reading Scantron file: %s" % input_filename)
     key_length = len(generate_key(0, N_e, N_A))
     u_data = []
@@ -830,6 +894,10 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
     return (u, k, a)
 
 def write_answers(output_filename, u, k, a):
+    """write_answers(output_filename, u, k, a)
+
+    Write the student answer data to answers.csv.
+    """
     log_and_print("Writing answers to file: %s" % output_filename)
     (N_s, N_Q) = a.shape
     with open(output_filename, 'w') as out_f:
@@ -842,6 +910,10 @@ def write_answers(output_filename, u, k, a):
     log("Successfully completed writing answers to file")
 
 def read_answers(input_filename):
+    """(u, k, a) = read_answers(input_filename)
+
+    Read the student answer data from answers.csv.
+    """
     log_and_print("Reading answers from file: %s" % input_filename)
     u_data = []
     k_data = []
@@ -870,6 +942,13 @@ def read_answers(input_filename):
 ######################################################################
 
 def keys_to_exams(K, k, u):
+    """e = keys_to_exams(K, k, u)
+
+    Match student-provided keys to exam keys to identify the exam
+    taken by each student.
+
+    e[s] = exam number taken by student s
+    """
     log_and_print("Matching keys to exams")
     N_s = k.shape[0]
     N_e = K.shape[0]
@@ -900,6 +979,11 @@ def keys_to_exams(K, k, u):
     return e
 
 def generate_grades(P, K, Q, V, A, u, k, a):
+    """(e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_grades(P, K, Q, V, A, u, k, a)
+
+    Generate the grade arrays from the exam specifications and the
+    student answer data.
+    """
     log_and_print("Generating grades")
     (N_Q, N_V, N_A) = P.shape
     N_s = u.shape[0]
@@ -1018,6 +1102,14 @@ def write_halfviz(output_filename, data, threshold):
     log("Successfully completed writing graph file")
 
 def generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
+    """d = generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a)
+
+    d is a structure containing all data arrays and all generated
+    statistics arrays.
+
+    Statistics arrays are output to individual files with the given
+    output_prefix.
+    """
     log_and_print("Generating grades and statistics")
     d = Struct()
 
@@ -1234,6 +1326,10 @@ def generate_grades_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
 ######################################################################
 
 def write_grades(output_filename, u, P_s):
+    """write_grades(output_filename, u, P_s)
+
+    Write the final exam grades to grades.csv.
+    """
     log_and_print("Writing grades to file: %s" % output_filename)
     N_s = u.shape[0]
 
@@ -1459,6 +1555,10 @@ def write_stats_tex_question_answers(out_f, d):
         out_f.write("\n")
 
 def write_statistics(output_filename, d):
+    """write_statistics(output_filename, d)
+
+    Write summary statistics to the stats.tex file.
+    """
     log_and_print("Writing statistics tex file: %s" % output_filename)
     with open(output_filename, "w") as out_f:
         out_f.write(r"\documentclass{article}" + "\n")
