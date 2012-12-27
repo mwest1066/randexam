@@ -1310,7 +1310,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.Pbar_gQ = np.zeros((d.N_g, d.N_Q))
     for gi in range(d.N_g):
         for Qi in range(d.N_Q):
-            d.Pbar_gQ[gi,Qi] = d.P_gQ[gi,Qi] / d.n_s_g[gi]
+            d.Pbar_gQ[gi,Qi] = d.P_gQ[gi,Qi] / max(1, d.n_s_g[gi])
     write_csv(output_prefix + "_Pbar_gQ.csv", ["g", "Pbar(g,Q=%d)"], d.Pbar_gQ)
 
     d.Phat_gQ = np.zeros((d.N_g, d.N_Q))
