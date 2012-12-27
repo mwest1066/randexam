@@ -1,4 +1,8 @@
 
+1.2.0 - XXXX-XX-XX
+
+  * Output score arrays as CSV files.
+
 1.1.0 - 2012-12-23
 
   * Add logging for all operations.

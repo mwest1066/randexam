@@ -1127,6 +1127,24 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.a = a
     (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_scores(P, K, Q, V, A, u, k, a)
 
+    write_csv(output_prefix + "_P.csv", ["Q", "V", "P(Q,V,A=%s)"], d.P,
+              index_formats=['i', 'i', 'c'])
+    write_csv(output_prefix + "_K.csv", ["e", "K(e)"], d.K)
+    write_csv(output_prefix + "_Q.csv", ["e", "Q(e,q=%d)"], d.Q)
+    write_csv(output_prefix + "_V.csv", ["e", "V(e,q=%d)"], d.V)
+    write_csv(output_prefix + "_A.csv", ["e", "A(e,q,a=%s)"], d.A,
+              index_formats=['i', 'i', 'c'])
+    write_csv(output_prefix + "_u.csv", ["s", "u(s,i=%d)"], d.u)
+    # disabled due to case-insensitivity on OS X
+    # write_csv(output_prefix + "_k.csv", ["s", "k(s)"], d.k)
+    write_csv(output_prefix + "_a.csv", ["s", "a(s,q=%d)"], d.a)
+    write_csv(output_prefix + "_e.csv", ["s", "e(s)"], d.e)
+    write_csv(output_prefix + "_P_se.csv", ["s", "P(s,e=%d)"], d.P_se)
+    write_csv(output_prefix + "_P_sq.csv", ["s", "P(s,q=%d)"], d.P_sq)
+    write_csv(output_prefix + "_P_s.csv", ["s", "P(s)"], d.P_s)
+    # disabled due to case-insensitivity on OS X
+    # write_csv(output_prefix + "_P_sQ.csv", ["s", "P(s,Q=%d)"], d.P_sQ)
+
     d.n_s_e = np.zeros(d.N_e, dtype=int)
     for ei in range(d.N_e):
         for si in range(d.N_s):
