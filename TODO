@@ -12,3 +12,6 @@ m_{QVB}(q,v,b) = average score of all students getting question $q$,
 variant $v$ correct (if b=1) or incorrect (if b=0).
 
 Integrate bad-key error reporting (closest Hamming match, best score match).
+
+Add P_sq(s,q), c(s,q), a(e(s),q) to scores.csv so that we can see what
+each student answered and what the correct answer should have been.
