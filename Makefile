@@ -1,6 +1,6 @@
 
-VERSION = 1.1.0
-RELEASE_DATE = 2012-12-23
+VERSION = 1.1.1
+RELEASE_DATE = 2013-01-05
 RELEASE_NAME = randexam-$(VERSION)
 
 RELEASE_FILES = ChangeLog Makefile README COPYING randexam randexam.tex randexam.pdf library.tex scantron.dat pipeline.gv statemachine.gv
