@@ -1,18 +1,30 @@
 #!/usr/bin/env python
 
-VERSION = "1.0.0"
+VERSION = "1.2.0"
+
+import re, random, sys, itertools, string, csv, os, difflib, subprocess
+import smtplib, email.mime.text, email.mime.multipart, email.mime.application
+import numpy as np
 
 ######################################################################
 ######################################################################
 # Configuration
 
-FILENAME_PREFIX = ""
+TEST_NAME = "TAM 212 Midterm 1, Spring 2013"
+FILENAME_PREFIX = "midterm1_"
+FEEDBACK_DIRECTORY = "feedback"
 
-N_e = 5 # number of randomized exams
+N_e = 550 # number of randomized exams (do not change after running proc-lib)
 N_A = 5 # maximum number of answers per question
 LAST_SCANTRON_QUESTION_NUMBER = 96
+RANDOM_SEED = 3 # determines the random output
 
-RANDOM_SEED = 7 # determines the random output
+MINIMUM_EXAM_PAGES = 14
+
+# email information
+MAIL_SERVER = "express-smtp.cites.uiuc.edu"
+FROM_ADDRESS = "mwest@illinois.edu"
+TO_DOMAIN = "illinois.edu"
 
 ######################################################################
 ######################################################################
@@ -21,27 +33,30 @@ RANDOM_SEED = 7 # determines the random output
 # input filenames
 LIBRARY_FILENAME = FILENAME_PREFIX + "library.tex"
 SCANTRON_FILENAME = FILENAME_PREFIX + "scantron.dat"
+NETIDS_FILENAME = FILENAME_PREFIX + "netids.txt"
 
 # output filenames
 EXAMS_FILENAME = FILENAME_PREFIX + "exams.tex"
 SOLUTIONS_FILENAME = FILENAME_PREFIX + "solutions.csv"
+FULL_SOLUTIONS_FILENAME = FILENAME_PREFIX + "full_solutions.tex"
 SPECS_FILENAME = FILENAME_PREFIX + "specs.csv"
 POINTS_FILENAME = FILENAME_PREFIX + "points.csv"
 ANSWERS_FILENAME = FILENAME_PREFIX + "answers.csv"
 SCORES_FILENAME = FILENAME_PREFIX + "scores.csv"
+GRADEBOOK_FILENAME = FILENAME_PREFIX + "gradebook.csv"
 STATS_FILENAME = FILENAME_PREFIX + "stats.tex"
 RAW_STATS_PREFIX = FILENAME_PREFIX + "stats"
+EMAIL_FILENAME = os.path.join(FEEDBACK_DIRECTORY, FILENAME_PREFIX + "emailscript")
 
 # logging filenames
 LOG_PROC_LIB_FILENAME = FILENAME_PREFIX + "proc_lib.log"
 LOG_PROC_SCAN_FILENAME = FILENAME_PREFIX + "proc_scan.log"
 LOG_PROC_ANS_FILENAME = FILENAME_PREFIX + "proc_ans.log"
+LOG_PROC_FEEDBACK_FILENAME = FILENAME_PREFIX + "proc_feedback.log"
+LOG_PROC_EMAIL_FILENAME = FILENAME_PREFIX + "proc_email.log"
 
 ######################################################################
 ######################################################################
-
-import re, random, sys, itertools, string, csv, os
-import numpy as np
 
 def main():
     if len(sys.argv) != 2:
@@ -50,9 +65,11 @@ def main():
         print("usage: randexam <command>")
         print("")
         print("<command> is:")
-        print("   proc-lib     process the library and generate exams")
-        print("   proc-scan    process and unscramble the scantron file")
-        print("   proc-ans     process the answer file to produce scores")
+        print("   proc-lib       process the library and generate exams")
+        print("   proc-scan      process and unscramble the scantron file")
+        print("   proc-ans       process the answer file to produce scores")
+        print("   proc-feedback  process the answer file to produce personalized feedback")
+        print("   proc-email     send personalized feedback by email")
         sys.exit(0)
 
     if sys.argv[1] == "proc-lib":
@@ -60,7 +77,7 @@ def main():
                                if os.path.exists(f)]
         if len(protected_filenames) > 0:
             print("ERROR: output files already exist, will not overwrite: %s"
-                  % ", ".join(protected_filenames))
+                  % " ".join(protected_filenames))
             sys.exit(1)
         init_logging(LOG_PROC_LIB_FILENAME)
         log_and_print("randexam version %s" % VERSION)
@@ -72,15 +89,18 @@ def main():
         (K, Q, V, A) = generate_specs(library, N_e, N_A)
         check_key_distances(K)
         write_specs(SPECS_FILENAME, K, Q, V, A)
-        write_exams(EXAMS_FILENAME, library, K, Q, V, A)
+        write_exams(EXAMS_FILENAME, library, K, Q, V, A, MINIMUM_EXAM_PAGES)
         c = generate_solutions(Q, V, A, C)
         write_solutions(SOLUTIONS_FILENAME, K, c)
+        write_full_solutions(FULL_SOLUTIONS_FILENAME, library, K, Q, V, A)
     elif sys.argv[1] == "proc-scan":
         init_logging(LOG_PROC_SCAN_FILENAME)
         log_and_print("randexam version %s" % VERSION)
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         N_Q = Q.shape[1]
         (u, k, a) = read_scantrons(SCANTRON_FILENAME, N_e, N_Q, N_A)
+        netids = read_netids(NETIDS_FILENAME)
+        check_netids(u, netids)
         write_answers(ANSWERS_FILENAME, u, k, a)
     elif sys.argv[1] == "proc-ans":
         init_logging(LOG_PROC_ANS_FILENAME)
@@ -90,10 +110,27 @@ def main():
         P = read_points(POINTS_FILENAME)
         d = generate_scores_and_statistics(RAW_STATS_PREFIX, P, K, Q, V, A, u, k, a)
         write_scores(SCORES_FILENAME, u, d.P_s)
-        write_statistics(STATS_FILENAME, d)
+        write_gradebook(GRADEBOOK_FILENAME, u, d.P_s)
+        write_statistics(STATS_FILENAME, TEST_NAME, d)
+    elif sys.argv[1] == "proc-feedback":
+        init_logging(LOG_PROC_FEEDBACK_FILENAME)
+        log_and_print("randexam version %s" % VERSION)
+        library = read_library(LIBRARY_FILENAME)
+        (P, C) = extract_points(library, N_A)
+        (K, Q, V, A) = read_specs(SPECS_FILENAME)
+        (u, k, a) = read_answers(ANSWERS_FILENAME)
+        P = read_points(POINTS_FILENAME)
+        c = generate_solutions(Q, V, A, C)
+        (e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, a)
+        generate_feedback(FEEDBACK_DIRECTORY, TEST_NAME, library, Q, V, A, u, k, a, e, P_sq, P_s, c)
+    elif sys.argv[1] == "proc-email":
+        init_logging(LOG_PROC_EMAIL_FILENAME)
+        log_and_print("randexam version %s" % VERSION)
+        (u, k, a) = read_answers(ANSWERS_FILENAME)
+        send_email(FEEDBACK_DIRECTORY, MAIL_SERVER, FROM_ADDRESS, TO_DOMAIN, TEST_NAME, u)
     else:
         print("ERROR: unrecognized command: %s" % sys.argv[1])
-        print("valid commands are \"proc-lib\", \"proc-scan\", or \"proc-ans\"")
+        print("valid commands are \"proc-lib\", \"proc-scan\", \"proc-ans\", \"proc-feedback\", or \"proc-email\"")
         sys.exit(1)
 
 ######################################################################
@@ -175,6 +212,7 @@ class Variant:
     def __init__(self):
         self.body = ""
         self.answers = []
+        self.solution = ""
         self.line_number = None
         self.scantron_uses = 0
         self.scantron_answers = 0
@@ -263,9 +301,11 @@ def read_library(input_filename):
         LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9.]+)\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$"),
         LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="begin_solution", regexp=r"^\s*\\begin\{solution\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="answer", regexp=r"^\s*\\answer(?P<tail>.*)$"),
         LibraryRegexp(name="correct_answer", regexp=r"^\s*\\correctanswer(?P<tail>.*)$"),
         LibraryRegexp(name="end_answers", regexp=r"^\s*\\end\{answers\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="end_solution", regexp=r"^\s*\\end\{solution\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="end_document", regexp=r"^\s*\\end\{document\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="text", regexp=r"^.*\S.*$"),
         LibraryRegexp(name="blank", regexp=r"^\s*$"),
@@ -352,6 +392,11 @@ def read_library(input_filename):
             if len(state.answer.body) > 0:
                 state.answer.body += "\n"
             state.answer.body += line
+        def append_to_solution_body():
+            file_log("appending line to solution body")
+            if len(state.variant.solution) > 0:
+                state.variant.solution += "\n"
+            state.variant.solution += line
 
         if state.name == "preamble":
             if match_name == "begin_document":   transition("coverpage")
@@ -392,10 +437,19 @@ def read_library(input_filename):
             elif match_name == "blank":          append_to_answer_body()
             elif match_name == "correct_answer": transition("answer"); new_answer(correct=True)
             elif match_name == "answer":         transition("answer"); new_answer(correct=False)
-            elif match_name == "end_answers":    transition("question")
+            elif match_name == "end_answers":    transition("presolution")
+            else: bad_transition()
+        elif state.name == "presolution":
+            if match_name == "blank":            pass
+            elif match_name == "begin_solution": transition("solution")
+            else: bad_transition()
+        elif state.name == "solution":
+            if match_name == "text":             append_to_solution_body()
+            elif match_name == "blank":          append_to_solution_body()
+            elif match_name == "end_solution":   transition("question")
             else: bad_transition()
         else:
-            file_die("unknown state '%s'", state.name)
+            file_die("unknown state '%s'" % state.name)
 
     input_file.close()
     log("Successfully completed library reading")
@@ -580,7 +634,9 @@ def generate_specs(library, N_e, N_A):
             V[ei,qi] = random.randrange(len(question.variants))
             a_list = list(range(len(question.variants[V[ei,qi]].answers)))
             random.shuffle(a_list)
-            A[ei,qi,:] = np.array([ind2chr(i) for i in a_list])
+            A[ei,qi,:] = "*"
+            for (ai, Ai) in enumerate(a_list):
+                A[ei,qi,ai] = ind2chr(Ai)
 
     log_array(K, "K", ["N_e"])
     log_array(Q, "Q", ["N_e", "N_Q"])
@@ -717,10 +773,11 @@ def check_key_distances(K):
 ######################################################################
 ######################################################################
 
-def write_exams(output_filename, library, K, Q, V, A):
-    """write_exams(output_filename, library, K, Q, V, A)
+def write_exams(output_filename, library, K, Q, V, A, min_pages):
+    """write_exams(output_filename, library, K, Q, V, A, min_pages)
 
-    Write the generated exams to the exams.tex file.
+    Write the generated exams to the exams.tex file, padding each exam
+    to be at least min_pages long.
     """
     log_and_print("Writing randomized exams to file: %s" % output_filename)
     (N_e, N_Q, N_A) = A.shape
@@ -729,9 +786,18 @@ def write_exams(output_filename, library, K, Q, V, A):
     with open(output_filename, "w") as out_f:
         out_f.write(r"\documentclass[twoside]{article}" + "\n")
         out_f.write(r"\usepackage{amsmath,amssymb}" + "\n")
-        out_f.write(r"\usepackage[margin=3cm]{geometry}" + "\n")
-        out_f.write(r"\usepackage{graphicx}" + "\n")
+        out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
+        out_f.write(r"\usepackage{enumerate}" + "\n")
+        out_f.write(r"\usepackage{pgffor}" + "\n")
+        out_f.write(r"\usepackage{tikz}" + "\n")
+        out_f.write(r"\usetikzlibrary{arrows,positioning}" + "\n")
         out_f.write(r"\begin{document}" + "\n")
+        out_f.write("\n")
+        out_f.write(r"\newcount\maxrawpages" + "\n")
+        out_f.write(r"\newcount\maxpadpages" + "\n")
+        out_f.write(r"\maxrawpages=0" + "\n")
+        out_f.write(r"\maxpadpages=0" + "\n")
+        out_f.write("\n")
 
         for ei in range(N_e):
             out_f.write(("%" * 70 + "\n") * 4)
@@ -761,8 +827,10 @@ def write_exams(output_filename, library, K, Q, V, A):
                     out_f.write(variant.body + "\n")
                     out_f.write(r"\begin{enumerate}" + "\n")
                     for ai in range(N_A):
-                        out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
-                        out_f.write(variant.answers[chr2ind(A[ei,qi,ai])].body + "\n")
+                        Ai = chr2ind(A[ei,qi,ai])
+                        if Ai >= 0:
+                            out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                            out_f.write(variant.answers[Ai].body + "\n")
                     out_f.write(r"\end{enumerate}" + "\n")
                     out_f.write(r"\vspace*{10em}" + "\n")
                     out_f.write(r"\end{minipage}" + "\n")
@@ -770,6 +838,18 @@ def write_exams(output_filename, library, K, Q, V, A):
 
                     qi += 1
 
+            out_f.write("\n")
+            out_f.write(r"\ifnum\maxrawpages<\thepage \maxrawpages=\thepage\fi" + "\n")
+            out_f.write("\n")
+            out_f.write(r"\ifnum\thepage<%d \foreach\x in {\value{page},...,%d}{\message{X} \vbox{}\newpage} \fi" % (min_pages + 1, min_pages + 1) + "\n")
+            out_f.write("\n")
+            out_f.write(r"\ifnum\maxpadpages<\thepage \maxpadpages=\thepage\fi" + "\n")
+            out_f.write("\n")
+
+        #out_f.write(r"\vbox{}" + "\n")
+        out_f.write("\n")
+        out_f.write(r"\message{Max raw length: \the\maxrawpages. Max padded length: \the\maxpadpages.}" + "\n")
+        out_f.write("\n")
         out_f.write(r"\end{document}" + "\n")
     log("Successfully completed writing randomized exams")
 
@@ -784,12 +864,12 @@ def generate_solutions(Q, V, A, C):
     log_and_print("Generating solutions")
     (N_e, N_Q, N_V) = A.shape
 
-    c = np.zeros((N_e, N_Q), dtype=int)
+    c = np.zeros((N_e, N_Q), dtype=str)
     for ei in range(N_e):
         for qi in range(N_Q):
             for ai in range(N_A):
                 if A[ei,qi,ai] == C[Q[ei,qi], V[ei,qi]]:
-                    c[ei,qi] = ai
+                    c[ei,qi] = ind2chr(ai)
     log_array(c, "c", ["N_e", "N_Q"])
     log("Successfully completed generating solutions")
     return c
@@ -806,8 +886,32 @@ def write_solutions(output_filename, K, c):
         writer = csv.writer(out_f)
         writer.writerow(["e", "K(e)"] + ["c(e,q=%d)" % (qi + 1) for qi in range(N_Q)])
         for ei in range(N_e):
-            writer.writerow([ei + 1, K[ei]] + [ind2chr(c[ei,qi]) for qi in range(N_Q)])
+            writer.writerow([ei + 1, K[ei]] + [c[ei,qi] for qi in range(N_Q)])
     log("Successfully completed writing solutions to file")
+
+######################################################################
+######################################################################
+
+def read_solutions(input_filename):
+    """read_solutions(input_filename)
+
+    Read in the solutions.csv file; each row corresponds to one version of the exam
+    """
+
+    log_and_print("Reading solutions from file:%s" % input_filename)
+    k_data = []
+    a_data = []
+    with open(input_filename, "r") as in_f:
+        reader = csv.reader(in_f)
+        for (i_row, row) in enumerate(reader):
+            if i_row == 0:
+                continue # skip header
+            k_data.append(row[1]);
+            a_data.append(row[2:]);
+    k = np.array(k_data, dtype=object)
+    a = np.array(a_data, dtype=str)
+    log("Successfully completed reading answers from file")
+    return (k, a)
 
 ######################################################################
 ######################################################################
@@ -937,6 +1041,50 @@ def read_answers(input_filename):
     log_array(a, "a", ["N_s", "N_Q"])
     log("Successfully completed reading answers from file")
     return (u, k, a)
+
+######################################################################
+######################################################################
+
+def read_netids(input_filename):
+    """netids = read_netids(input_filename)
+
+    Read a list of netids (one per line) from the given file.
+    """
+    log_and_print("Reading NetIDs file: %s" % input_filename)
+    netids = []
+    error = False
+    with open(input_filename, "r") as in_f:
+        for (i_line, line) in enumerate(in_f):
+            netid = line.strip()
+            log("%s:%s: read \"%s\"" % (input_filename, i_line + 1, netid))
+            if not re.search("^[a-zA-Z0-9]+$", netid):
+                error = True
+                log_and_print("%s:%s: ERROR: invalid NetID \"%s\""
+                              % (input_filename, i_line + 1, netid))
+            else:
+                netids.append(netid.upper())
+    log("Successfully completed reading answers from file")
+    return netids
+
+def check_netids(u, netids):
+    log_and_print("Checking NetIDs")
+    netids_file = set(netids)
+    netids_scantron = set()
+    N_s = u.shape[0]
+    for si in range(N_s):
+        netid = u[si,3]
+        if netid in netids_scantron:
+            log_and_print("WARNING: Scantron NetID \"%s\" found multiple times."
+                          % netid)
+        netids_scantron.add(netid)
+        if netid not in netids_file:
+            matches = difflib.get_close_matches(netid, netids)
+            log_and_print("WARNING: Scantron NetID \"%s\" not found. Possible matches: %s"
+                          % (netid, ", ".join(matches)))
+    for netid in (netids_file - netids_scantron):
+        log_and_print("WARNING: NetID \"%s\" from netids file not found in Scantron."
+                      % netid)
+    log("Successfully completed checking NetIDs")
 
 ######################################################################
 ######################################################################
@@ -1126,24 +1274,6 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.k = k
     d.a = a
     (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_scores(P, K, Q, V, A, u, k, a)
-
-    write_csv(output_prefix + "_P.csv", ["Q", "V", "P(Q,V,A=%s)"], d.P,
-              index_formats=['i', 'i', 'c'])
-    write_csv(output_prefix + "_K.csv", ["e", "K(e)"], d.K)
-    write_csv(output_prefix + "_Q.csv", ["e", "Q(e,q=%d)"], d.Q)
-    write_csv(output_prefix + "_V.csv", ["e", "V(e,q=%d)"], d.V)
-    write_csv(output_prefix + "_A.csv", ["e", "A(e,q,a=%s)"], d.A,
-              index_formats=['i', 'i', 'c'])
-    write_csv(output_prefix + "_u.csv", ["s", "u(s,i=%d)"], d.u)
-    # disabled due to case-insensitivity on OS X
-    # write_csv(output_prefix + "_k.csv", ["s", "k(s)"], d.k)
-    write_csv(output_prefix + "_a.csv", ["s", "a(s,q=%d)"], d.a)
-    write_csv(output_prefix + "_e.csv", ["s", "e(s)"], d.e)
-    write_csv(output_prefix + "_P_se.csv", ["s", "P(s,e=%d)"], d.P_se)
-    write_csv(output_prefix + "_P_sq.csv", ["s", "P(s,q=%d)"], d.P_sq)
-    write_csv(output_prefix + "_P_s.csv", ["s", "P(s)"], d.P_s)
-    # disabled due to case-insensitivity on OS X
-    # write_csv(output_prefix + "_P_sQ.csv", ["s", "P(s,Q=%d)"], d.P_sQ)
 
     d.n_s_e = np.zeros(d.N_e, dtype=int)
     for ei in range(d.N_e):
@@ -1361,6 +1491,23 @@ def write_scores(output_filename, u, P_s):
 ######################################################################
 ######################################################################
 
+def write_gradebook(output_filename, u, P_s):
+    """write_gradebook(output_filename, u, P_s)
+
+    Write the final exam scores to gradebook.csv.
+    """
+    log_and_print("Writing gradebook scores to file: %s" % output_filename)
+    N_s = u.shape[0]
+
+    with open(output_filename, 'w') as out_f:
+        writer = csv.writer(out_f)
+        for si in range(N_s):
+            writer.writerow([u[si,3].lower(), P_s[si]])
+    log("Successfully completed writing gradebook scores to file")
+
+######################################################################
+######################################################################
+
 def tex_write_basic_stats(out_f, d):
     out_f.write(r"\begin{center}" + "\n")
     out_f.write(r"\begin{tabular}{|l|l|l|}" + "\n")
@@ -1572,8 +1719,8 @@ def write_stats_tex_question_answers(out_f, d):
         out_f.write(r"\end{minipage}" + "\n")
         out_f.write("\n")
 
-def write_statistics(output_filename, d):
-    """write_statistics(output_filename, d)
+def write_statistics(output_filename, test_name, d):
+    """write_statistics(output_filename, test_name, d)
 
     Write summary statistics to the stats.tex file.
     """
@@ -1583,6 +1730,8 @@ def write_statistics(output_filename, d):
         out_f.write(r"\usepackage[margin=3cm]{geometry}" + "\n")
         out_f.write(r"\usepackage{pgfplots}" + "\n")
         out_f.write(r"\begin{document}" + "\n")
+        out_f.write("\n")
+        out_f.write(r"\centerline{{\bf\Large %s: Statistics}}" % test_name + "\n")
         out_f.write("\n")
 
         out_f.write(r"\section{Student score distribution}" + "\n")
@@ -1644,6 +1793,243 @@ def write_statistics(output_filename, d):
 
         out_f.write(r"\end{document}" + "\n")
     log("Successfully completed writing statistics tex file")
+
+######################################################################
+######################################################################
+
+def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e, P_sq, P_s, c):
+    log_and_print("Writing feedback directory: %s" % output_directory)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    (N_s, N_Q) = P_sq.shape
+
+    for si in range(N_s):
+        log("%d: writing feedback for student %s" % (si + 1, u[si,3]))
+        student_name = u[si,0].title()
+        student_initial = u[si,1].title()
+        student_number = u[si,2]
+        student_netid = u[si,3].lower()
+        ei = e[si]
+
+        output_basename = student_netid + ".tex"
+        output_filename = os.path.join(output_directory, output_basename)
+        with open(output_filename, "w") as out_f:
+            out_f.write(r"\documentclass[12pt]{article}" + "\n")
+            out_f.write(r"\usepackage{amsmath,amssymb,multicol,color}" + "\n")
+            out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
+            out_f.write(r"\usepackage{graphicx}" + "\n")
+            out_f.write(r"\usepackage{enumerate}" + "\n")
+            out_f.write(r"\usepackage{tikz}" + "\n")
+            out_f.write(r"\usetikzlibrary{arrows,positioning}" + "\n")
+            out_f.write(r"\begin{document}" + "\n")
+            out_f.write(r"\centerline{{\bf\Large %s: Solution Key}}" % test_name + "\n")
+            out_f.write(r"\vspace{.2in}" + "\n")
+            out_f.write(r"\hrule" + "\n")
+            out_f.write(r"\vspace*{.3in}" + "\n")
+            out_f.write(r"{ \Large {\bf Name:} %s, %s." % (student_name, student_initial) + "\n")
+            out_f.write(r"\hfill"+"\n")
+            out_f.write(r"{ {\bf UIN:}  %s}}" % student_number + "\n")
+            out_f.write(r"\\" + "\n")
+            out_f.write(r"\hrule" + "\n")
+            out_f.write(r"\vspace*{.3in}" + "\n")
+            out_f.write(r"{\Large {\bf Exam code:} %s}" % k[si] + "\n")
+            out_f.write(r"\hfill"+"\n")
+            out_f.write(r"{\Large {\bf NetID:}  {\texttt{%s}}}" % student_netid + "\n")
+            out_f.write(r"\\" + "\n")
+            out_f.write(r"\hrule" + "\n")
+            out_f.write(r"\vspace*{.3in}" + "\n")
+            out_f.write(r"\centerline{\bf\Large Summary of answers:}"+"\n")
+            out_f.write(r"\vspace*{.3in}" + "\n")
+
+            out_f.write(r"\begin{center}" + "\n")
+            out_f.write(r"\begin{tabular}{|c|c|c|c|}\hline" + "\n")
+            out_f.write(r"Question  & Correct Answer & Your Answer & Points\\\hline" + "\n")
+            for qi in range(N_Q):
+                answer_color = "blue" if (a[si,qi] == c[ei,qi]) else "red"
+                out_f.write(r"%d & %s & {\color{%s} %s} & %d\\\hline"
+                            % ((qi + 1), c[ei,qi], answer_color, a[si,qi], P_sq[si,qi]) + "\n")
+            out_f.write(r"\hline{\bf Total} &&& %d\\\hline" % P_s[si])
+            out_f.write(r"\end{tabular}" + "\n")
+            out_f.write(r"\end{center}" + "\n")
+
+            out_f.write(r"\newpage" + "\n")
+
+            flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
+            qi = 0
+            for (i_zone, zone) in enumerate(library.zones):
+                out_f.write("%% Zone %d\n\n" % (i_zone + 1))
+                out_f.write(zone.body + "\n\n")
+                for i_zone_question in range(len(zone.questions)):
+                    out_f.write(r"\noindent" + "\n")
+                    out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                    points = flat_questions[Q[ei,qi]].points
+                    out_f.write(r"%d. (%g %s.)" % (qi + 1, points,
+                                                  "point" if points == 1 else "points")
+                                + "\n")
+                    variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
+                    out_f.write(variant.body + "\n")
+                    out_f.write(r"\begin{enumerate}" + "\n")
+                    for ai in range(N_A):
+                        Ai = chr2ind(A[ei,qi,ai])
+                        if Ai >= 0:
+                            out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                            out_f.write(variant.answers[Ai].body + "\n")
+
+                    out_f.write(r"\end{enumerate}" + "\n")
+
+                    answer_color = "blue" if (a[si,qi] == c[ei,qi]) else "red"
+                    out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
+                                % (c[ei,qi], answer_color, a[si,qi]))
+                    out_f.write(r"{\bf %d} out of {\bf %d} %s received"
+                                % (P_sq[si,qi], points, "point" if points == 1 else "points")
+                                + "\n")
+                    out_f.write(r"\vspace{1em}"+"\n")
+                    out_f.write(r"\hrule" + "\n")
+                    out_f.write(r"\vspace{1em}"+"\n")
+                    out_f.write(r"\noindent {\bf Solution.} ")
+                    out_f.write(variant.solution + "\n")
+                    out_f.write(r"\vspace{1em}"+"\n")
+                    out_f.write(r"\hrule height 2pt"+"\n")
+                    out_f.write(r"\end{minipage}" + "\n")
+                    out_f.write(r"\vspace{2em}" + "\n")
+                    qi += 1
+
+            out_f.write(r"\end{document}" + "\n")
+
+    for si in range(N_s):
+        log_and_print("%d/%d: latexing feedback for student %s" % (si + 1, u.shape[0], u[si,3]))
+        student_netid = u[si,3].lower()
+        output_basename = student_netid + ".tex"
+        with open(os.devnull, "w") as out_null, open(os.devnull, "r") as in_null:
+            if subprocess.call(["pdflatex", output_basename], cwd=output_directory,
+                               stdin=in_null, stdout=out_null, stderr=out_null):
+                log_and_print("ERROR: pdflatex failed for %s" % output_basename)
+
+    log("Successfully completed writing feedback files")
+
+def send_email(input_directory, mail_server, from_address, to_domain, subject_line, u):
+    log_and_print("Sending feedback emails from directory: %s" % input_directory)
+
+    N_s = u.shape[0]
+
+    smtp = smtplib.SMTP()
+    # uncomment line below to enable verbose debugging info
+    #smtp.set_debuglevel(True)
+    log_and_print("Connecting to mail server: %s" % mail_server)
+    smtp.connect(mail_server)
+    log_and_print("Sending mail from: %s" % from_address)
+    log_and_print("Subject line: %s" % subject_line)
+
+    try:
+        for si in range(N_s):
+            student_netid = u[si,3].lower()
+            to_address = student_netid + "@" + to_domain
+            input_basename = student_netid + ".pdf"
+            input_filename = os.path.join(input_directory, input_basename)
+
+            log_and_print("%d/%d: emailing feedback to %s" % (si + 1, u.shape[0], to_address))
+
+            outer = email.mime.multipart.MIMEMultipart()
+            outer['Subject'] = subject_line
+            outer['To'] = to_address
+            outer['From'] = from_address
+
+            if not os.path.isfile(input_filename):
+                log_and_print("ERROR: unable to find file: %s" % input_filename)
+
+            msg = email.mime.text.MIMEText("The attached file contains a summary of your recent test results.\n\n"
+                                           + "If this email was mistakenly sent to you, please reply and let me know.\n\n")
+            outer.attach(msg)
+
+            with open(input_filename, "rb") as in_f:
+                pdf_data = in_f.read()
+                msg = email.mime.application.MIMEApplication(in_f.read(), _subtype="pdf")
+                msg.set_payload(pdf_data)
+                msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
+                email.encoders.encode_base64(msg)
+                outer.attach(msg)
+
+            composed = outer.as_string()
+            smtp.sendmail(from_address, to_address, composed)
+    finally:
+        smtp.quit()
+
+    log("Successfully completed sending email")
+
+######################################################################
+######################################################################
+
+def write_full_solutions(output_filename, library, K, Q, V, A):
+    """write_full_solutions(output_filename, library, K, Q, V, A)
+
+    Write the full solutions for each randomized exam to the given file.
+    """
+    log_and_print("Writing full solutions to file: %s" % output_filename)
+    (N_e, N_Q, N_A) = A.shape
+
+    flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
+    with open(output_filename, "w") as out_f:
+        out_f.write(r"\documentclass[twoside]{article}" + "\n")
+        out_f.write(r"\usepackage{amsmath,amssymb}" + "\n")
+        out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
+        out_f.write(r"\usepackage{enumerate}" + "\n")
+        out_f.write(r"\usepackage{tikz}" + "\n")
+        out_f.write(r"\usetikzlibrary{arrows,positioning}" + "\n")
+        out_f.write(r"\begin{document}" + "\n")
+
+        for ei in range(N_e):
+            out_f.write(("%" * 70 + "\n") * 4)
+            out_f.write(r"%% Exam number %d" % (ei + 1) + "\n\n")
+            out_f.write(r"\cleardoublepage" + "\n")
+            out_f.write(r"\setcounter{page}{1}" + "\n\n")
+            out_f.write(library.coverpage + "\n")
+            out_f.write(r"\begin{enumerate}" + "\n")
+            for (i_key_digit, key_digit) in enumerate(K[ei]):
+                key_question = LAST_SCANTRON_QUESTION_NUMBER - len(K[ei]) + i_key_digit + 1
+                out_f.write(r"\item[%d.] %s" % (key_question, key_digit) + "\n")
+            out_f.write(r"\end{enumerate}" + "\n\n")
+            out_f.write(r"\newpage" + "\n\n")
+
+            qi = 0
+            for (i_zone, zone) in enumerate(library.zones):
+                out_f.write("%% Zone %d\n\n" % (i_zone + 1))
+                out_f.write(zone.body + "\n\n")
+                for i_zone_question in range(len(zone.questions)):
+                    out_f.write(r"\noindent" + "\n")
+                    out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                    points = flat_questions[Q[ei,qi]].points
+                    out_f.write(r"%d. (%g %s)" % (qi + 1, points,
+                                                  "point" if points == 1 else "points")
+                                + "\n")
+                    variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
+                    out_f.write(variant.body + "\n")
+                    out_f.write(r"\begin{enumerate}" + "\n")
+                    for ai in range(N_A):
+                        Ai = chr2ind(A[ei,qi,ai])
+                        if Ai >= 0:
+                            if variant.answers[Ai].correct:
+                                out_f.write(r"\item[(%s)] $\bigstar$ " % ind2chr(ai) + "\n")
+                                out_f.write(variant.answers[Ai].body + "\n")
+                            else:
+                                out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                                out_f.write(variant.answers[Ai].body + "\n")
+                    out_f.write(r"\end{enumerate}" + "\n")
+                    out_f.write(r"\vspace*{2em}" + "\n")
+                    out_f.write(r"\hrule" + "\n")
+                    out_f.write(r"\vspace{2em}"+"\n")
+                    out_f.write(r"\noindent {\bf Solution.} ")
+                    out_f.write(variant.solution + "\n")
+                    out_f.write(r"\vspace{2em}"+"\n")
+                    out_f.write(r"\hrule height 2pt"+"\n")
+                    out_f.write(r"\end{minipage}" + "\n")
+                    out_f.write(r"\vspace{2em}" + "\n")
+                    out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
+
+                    qi += 1
+
+        out_f.write(r"\end{document}" + "\n")
+    log("Successfully completed writing full solutions")
 
 ######################################################################
 ######################################################################
