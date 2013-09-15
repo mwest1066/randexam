@@ -10,8 +10,8 @@ import numpy as np
 ######################################################################
 # Configuration
 
-TEST_NAME = "TAM 212 Midterm 1, Spring 2013"
-FILENAME_PREFIX = "midterm1_"
+TEST_NAME = "TAM 212 Midterm 2, Spring 2013"
+FILENAME_PREFIX = "midterm2_"
 FEEDBACK_DIRECTORY = "feedback"
 
 N_e = 550 # number of randomized exams (do not change after running proc-lib)
@@ -19,7 +19,7 @@ N_A = 5 # maximum number of answers per question
 LAST_SCANTRON_QUESTION_NUMBER = 96
 RANDOM_SEED = 3 # determines the random output
 
-MINIMUM_EXAM_PAGES = 14
+MINIMUM_EXAM_PAGES = 22
 
 # email information
 MAIL_SERVER = "express-smtp.cites.uiuc.edu"
@@ -790,7 +790,7 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages):
         out_f.write(r"\usepackage{enumerate}" + "\n")
         out_f.write(r"\usepackage{pgffor}" + "\n")
         out_f.write(r"\usepackage{tikz}" + "\n")
-        out_f.write(r"\usetikzlibrary{arrows,positioning}" + "\n")
+        out_f.write(r"\usetikzlibrary{arrows,positioning,calc,intersections}" + "\n")
         out_f.write(r"\begin{document}" + "\n")
         out_f.write("\n")
         out_f.write(r"\newcount\maxrawpages" + "\n")
@@ -817,8 +817,9 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages):
                 out_f.write("%% Zone %d\n\n" % (i_zone + 1))
                 out_f.write(zone.body + "\n\n")
                 for i_zone_question in range(len(zone.questions)):
+                    out_f.write(r"\newpage" + "\n")
                     out_f.write(r"\noindent" + "\n")
-                    out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                    #out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
                     points = flat_questions[Q[ei,qi]].points
                     out_f.write(r"%d. (%g %s)" % (qi + 1, points,
                                                   "point" if points == 1 else "points")
@@ -832,9 +833,9 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages):
                             out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
                             out_f.write(variant.answers[Ai].body + "\n")
                     out_f.write(r"\end{enumerate}" + "\n")
-                    out_f.write(r"\vspace*{10em}" + "\n")
-                    out_f.write(r"\end{minipage}" + "\n")
-                    out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
+                    #out_f.write(r"\vspace*{10em}" + "\n")
+                    #out_f.write(r"\end{minipage}" + "\n")
+                    #out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
 
                     qi += 1
 
@@ -1274,6 +1275,11 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.k = k
     d.a = a
     (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_scores(P, K, Q, V, A, u, k, a)
+
+    write_csv(output_prefix + "_P_seq.csv", ["s", "e", "P_seq(s,e,q=%d)"], d.P_seq)
+    write_csv(output_prefix + "_P_se.csv", ["s", "P_se(s,e=%d)"], d.P_se)
+    write_csv(output_prefix + "_P_s.csv", ["s", "P_s(s)"], d.P_s)
+    write_csv(output_prefix + "_P_sQ.csv", ["s", "P_sQ(s,Q=%d)"], d.P_sQ)
 
     d.n_s_e = np.zeros(d.N_e, dtype=int)
     for ei in range(d.N_e):
@@ -1821,7 +1827,7 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
             out_f.write(r"\usepackage{graphicx}" + "\n")
             out_f.write(r"\usepackage{enumerate}" + "\n")
             out_f.write(r"\usepackage{tikz}" + "\n")
-            out_f.write(r"\usetikzlibrary{arrows,positioning}" + "\n")
+            out_f.write(r"\usetikzlibrary{arrows,positioning,calc,intersections}" + "\n")
             out_f.write(r"\begin{document}" + "\n")
             out_f.write(r"\centerline{{\bf\Large %s: Solution Key}}" % test_name + "\n")
             out_f.write(r"\vspace{.2in}" + "\n")
@@ -1861,8 +1867,9 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
                 out_f.write("%% Zone %d\n\n" % (i_zone + 1))
                 out_f.write(zone.body + "\n\n")
                 for i_zone_question in range(len(zone.questions)):
+                    out_f.write(r"\newpage" + "\n")
                     out_f.write(r"\noindent" + "\n")
-                    out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                    #out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
                     points = flat_questions[Q[ei,qi]].points
                     out_f.write(r"%d. (%g %s.)" % (qi + 1, points,
                                                   "point" if points == 1 else "points")
@@ -1891,8 +1898,8 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
                     out_f.write(variant.solution + "\n")
                     out_f.write(r"\vspace{1em}"+"\n")
                     out_f.write(r"\hrule height 2pt"+"\n")
-                    out_f.write(r"\end{minipage}" + "\n")
-                    out_f.write(r"\vspace{2em}" + "\n")
+                    #out_f.write(r"\end{minipage}" + "\n")
+                    #out_f.write(r"\vspace{2em}" + "\n")
                     qi += 1
 
             out_f.write(r"\end{document}" + "\n")
@@ -1913,16 +1920,34 @@ def send_email(input_directory, mail_server, from_address, to_domain, subject_li
 
     N_s = u.shape[0]
 
-    smtp = smtplib.SMTP()
-    # uncomment line below to enable verbose debugging info
-    #smtp.set_debuglevel(True)
-    log_and_print("Connecting to mail server: %s" % mail_server)
-    smtp.connect(mail_server)
-    log_and_print("Sending mail from: %s" % from_address)
-    log_and_print("Subject line: %s" % subject_line)
+    block_size = 50
 
     try:
+
+        smtp = smtplib.SMTP()
+        # uncomment line below to enable verbose debugging info
+        #smtp.set_debuglevel(True)
+        log_and_print("Connecting to mail server: %s" % mail_server)
+        smtp.connect(mail_server)
+        log_and_print("Sending mail from: %s" % from_address)
+        log_and_print("Subject line: %s" % subject_line)
+
+        index_in_block = 0
+
         for si in range(N_s):
+            if index_in_block >= 50:
+                index_in_block = 0
+
+            if index_in_block == 0:
+                log_and_print("Re-connecting to mail server")
+                log_and_print("Quitting current connection")
+                smtp.quit()
+                log_and_print("Creating new SMTP object")
+                smtp = smtplib.SMTP()
+                log_and_print("Connecting to mail server: %s" % mail_server)
+                smtp.connect(mail_server)
+            index_in_block += 1
+
             student_netid = u[si,3].lower()
             to_address = student_netid + "@" + to_domain
             input_basename = student_netid + ".pdf"
@@ -1975,7 +2000,7 @@ def write_full_solutions(output_filename, library, K, Q, V, A):
         out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
         out_f.write(r"\usepackage{enumerate}" + "\n")
         out_f.write(r"\usepackage{tikz}" + "\n")
-        out_f.write(r"\usetikzlibrary{arrows,positioning}" + "\n")
+        out_f.write(r"\usetikzlibrary{arrows,positioning,calc,intersections}" + "\n")
         out_f.write(r"\begin{document}" + "\n")
 
         for ei in range(N_e):
@@ -1996,8 +2021,9 @@ def write_full_solutions(output_filename, library, K, Q, V, A):
                 out_f.write("%% Zone %d\n\n" % (i_zone + 1))
                 out_f.write(zone.body + "\n\n")
                 for i_zone_question in range(len(zone.questions)):
+                    out_f.write(r"\newpage" + "\n")
                     out_f.write(r"\noindent" + "\n")
-                    out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                    #out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
                     points = flat_questions[Q[ei,qi]].points
                     out_f.write(r"%d. (%g %s)" % (qi + 1, points,
                                                   "point" if points == 1 else "points")
@@ -2022,9 +2048,9 @@ def write_full_solutions(output_filename, library, K, Q, V, A):
                     out_f.write(variant.solution + "\n")
                     out_f.write(r"\vspace{2em}"+"\n")
                     out_f.write(r"\hrule height 2pt"+"\n")
-                    out_f.write(r"\end{minipage}" + "\n")
-                    out_f.write(r"\vspace{2em}" + "\n")
-                    out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
+                    #out_f.write(r"\end{minipage}" + "\n")
+                    #out_f.write(r"\vspace{2em}" + "\n")
+                    #out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
 
                     qi += 1
 
