@@ -1,19 +1,19 @@
 
-VERSION = 1.1.0
-RELEASE_DATE = 2012-12-23
+VERSION = 1.6.0
+RELEASE_DATE = 2013-10-08
 RELEASE_NAME = randexam-$(VERSION)
 
-RELEASE_FILES = ChangeLog Makefile README COPYING randexam randexam.tex randexam.pdf library.tex scantron.dat pipeline.gv statemachine.gv
+RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam randexam.tex randexam.pdf library.tex scantron.dat pipeline.gv statemachine.gv
 
 .PHONY: all release
 all: randexam.pdf
 release: $(RELEASE_NAME).tar.gz
 
 $(RELEASE_NAME).tar.gz: randexam.pdf
-	grep -q $(VERSION) README
+	grep -q $(VERSION) README.md
 	grep -q $(VERSION) ChangeLog
 	grep -q $(VERSION) randexam.tex
-	grep -q $(RELEASE_DATE) README
+	grep -q $(RELEASE_DATE) README.md
 	grep -q $(RELEASE_DATE) ChangeLog
 	grep -q $(RELEASE_DATE) randexam.tex
 	mkdir $(RELEASE_NAME)

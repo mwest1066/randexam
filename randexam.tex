@@ -7,9 +7,9 @@
 
 \begin{document}
 
-\title{Randomized Exam Generation and Grading\\[0.5em] Version 1.1.0}
+\title{Randomized Exam Generation and Grading\\[0.5em] Version 1.6.0}
 \author{M. West}
-\date{2012-12-23}
+\date{2013-10-08}
 \maketitle
 
 \section{Concepts}
@@ -656,10 +656,10 @@ $K_i$ and zero-based indexes $i$ they are
   K_i = \left\lfloor \frac{e}{(N_{\rm A})^i} \right\rfloor
   \mod N_{\rm A}, \text{ for } i = 0,\ldots,(N_{\rm D} - 1).
 \end{equation}
-The checksum digits are the \emph{parity digit} $K_{\rm P}$, a
-\emph{Fletcher-type} checksum $K_{\rm F}$, and possibly a modified
-Fletcher-type checksum $K_{\rm M}$, defined for zero-based digits
-$K_i$ and zero-based indexes $i$ by
+The $N_{\rm C}$ checksum digits are the \emph{parity digit} $K_{\rm
+  P}$, a \emph{Fletcher-type} checksum $K_{\rm F}$, and possibly a
+modified Fletcher-type checksum $K_{\rm M}$, defined for zero-based
+digits $K_i$ and zero-based indexes $i$ by
 \begin{align}
   K_{\rm P} &= \sum_{i=0}^{N_{\rm D} - 1} K_i \mod N_{\rm A}
   \displaybreak[0] \\
@@ -681,7 +681,7 @@ $N_{\rm A} = 5$ the key lengths are:
 \begin{center}
   \begin{tabular}{cccc}
     number of exams & exam-number digits $N_{\rm D}$
-    & checksum digits & key length $N_{\rm K}$ \\
+    & checksum digits & key length $N_{\rm K} = N_{\rm D} + N_{\rm C}$ \\
     \hline
     5 & 1 & 2 & 3 \\
     25 & 2 & 2 & 4 \\

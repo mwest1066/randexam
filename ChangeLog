@@ -1,7 +1,15 @@
 
-1.2.0 - XXXX-XX-XX
+1.6.0 - 2013-10-08
 
   * Output score arrays as CSV files.
+
+  * Generate per-student feedback files.
+
+  * Email feedback directly to students.
+
+  * Allow curving of final scores.
+
+  * Ensure all exams are the same number of pages.
 
 1.1.1 - 2013-01-05
 
