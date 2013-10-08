@@ -8,7 +8,7 @@
 \begin{document}
 
 \title{Randomized Exam Generation and Grading\\[0.5em] Version 1.6.0}
-\author{M. West}
+\author{Matt West}
 \date{2013-10-08}
 \maketitle
 
@@ -707,6 +707,11 @@ To prepare a ``Final'' exam, we assume that we are working within a
 \item Edit \texttt{library.tex} to add questions and make the
   coversheet.
 \item Run \texttt{./randexam proc-lib}.
+\item Run \texttt{pdflatex exams.tex}, and look at the output near the
+  end for information about exam lengths.
+\item Adjust \texttt{MINIMUM_EXAM_PAGES} in \texttt{randexam} to be
+  the smallest even number that is at least as large as the maximum
+  raw length.
 \end{itemize}
 
 \subsection{Administering the exams}
@@ -728,6 +733,11 @@ To prepare a ``Final'' exam, we assume that we are working within a
 \item Run \texttt{./randexam proc-scan} and clean up errors in the
   file as needed.
 \item Run \texttt{./randexam proc-ans}.
+\item If desired, run \texttt{./randexam proc-curve} and adjust the
+  \texttt{curve_scores()} function in \texttt{randexam} as desired.
+\item Upload \texttt{gradebook.csv} to record the total scores.
+\item Run \texttt{./randexam proc-feedback}.
+\item Run \texttt{./randexam proc-email}.
 \end{itemize}
 
 \end{document}

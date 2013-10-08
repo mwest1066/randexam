@@ -22,5 +22,3 @@ Fix bug reported by Lee on 2013-02-14 where blank answers are
 converted to * which are then interpreted as answers by n, na,
 statistics, etc, leading to these statistics thinking every student
 answered every question.
-
-Fix bug where \maxpadpages is 1 more than it should be.
