@@ -2034,8 +2034,10 @@ def send_email(input_directory, mail_server, mail_domain, subject_line, u):
 
     N_s = u.shape[0]
 
-    block_size = 50
+    block_size = 50 # number of emails to send per connect session
+    min_block_send_time = 60 # seconds
 
+    print("WARNING: email sending will only work correctly from within the %s domain" % mail_domain)
     sending_netid = raw_input("NetID of sending user: ")
     sending_password = getpass.getpass("Active Directory password: ")
     from_address = sending_netid + "@" + mail_domain
@@ -2046,45 +2048,23 @@ def send_email(input_directory, mail_server, mail_domain, subject_line, u):
     index_in_block = 0
 
     for si in range(N_s):
-        if index_in_block >= 50: # number of emails per connect session
+        if index_in_block >= block_size:
             index_in_block = 0
-            log_and_print("Re-connecting to mail server")
-            log_and_print("Sleeping for 60 seconds")
-            time.sleep(60)
             log_and_print("Quitting current connection")
             smtp.quit()
+            log_and_print("Sleeping for 60 seconds")
+            time.sleep(min_block_send_time)
 
-        if False and index_in_block == 0:
-            log_and_print("Creating new SMTP object")
-            #smtp = smtplib.SMTP(mail_server, 25)
-            smtp = smtplib.SMTP()
-            #smtp = smtplib.SMTP(mail_server, 587)
-            # uncomment line below to enable verbose debugging info
-            #smtp.set_debuglevel(True)
-            log_and_print("Connecting to mail server: %s" % mail_server)
-            #ret = smtp.connect(mail_server, 587)
-            ret = smtp.connect(mail_server, 25)
-            print "return from connect: ", ret
-            #ret = smtp.starttls()
-            #print "return from starttls: ", ret
-            #ret = smtp.ehlo_or_helo_if_needed()
-            #print "return from helo: ", ret
-            #ret = smtp.login(sending_netid, sending_password)
-            #print "return from login: ", ret
         if index_in_block == 0:
             log_and_print("Creating new SMTP object")
             smtp = smtplib.SMTP()
             # uncomment line below to enable verbose debugging info
             #smtp.set_debuglevel(True)
             log_and_print("Connecting to mail server: %s" % mail_server)
-            ret = smtp.connect(mail_server, 587)
-            print "return from connect: ", ret
-            ret = smtp.starttls()
-            print "return from starttls: ", ret
-            ret = smtp.ehlo_or_helo_if_needed()
-            print "return from helo: ", ret
-            ret = smtp.login(sending_netid, sending_password)
-            print "return from login: ", ret
+            smtp.connect(mail_server, 587)
+            smtp.starttls()
+            smtp.ehlo_or_helo_if_needed()
+            smtp.login(sending_netid, sending_password)
         index_in_block += 1
 
         student_netid = u[si,3].lower()
