@@ -2019,10 +2019,11 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
         log_and_print("%d/%d: latexing feedback for student %s" % (si + 1, u.shape[0], u[si,3]))
         student_netid = u[si,3].lower()
         output_basename = student_netid + ".tex"
-        with open(os.devnull, "w") as out_null, open(os.devnull, "r") as in_null:
-            if subprocess.call(["pdflatex", output_basename], cwd=output_directory,
-                               stdin=in_null, stdout=out_null, stderr=out_null):
-                log_and_print("ERROR: pdflatex failed for %s" % output_basename)
+        with open(os.devnull, "w") as out_null:
+            with open(os.devnull, "r") as in_null:
+                if subprocess.call(["pdflatex", output_basename], cwd=output_directory,
+                                   stdin=in_null, stdout=out_null, stderr=out_null):
+                    log_and_print("ERROR: pdflatex failed for %s" % output_basename)
 
     log("Successfully completed writing feedback files")
 
