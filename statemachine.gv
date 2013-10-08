@@ -14,6 +14,8 @@ digraph partmc_modules {
     variant [shape=box, style=filled, fillcolor=lavender];
     answers [shape=box, style=filled, fillcolor=lavender];
     answer [shape=box, style=filled, fillcolor=lavender];
+    presolution [shape=box, style=filled, fillcolor=lavender];
+    solution [shape=box, style=filled, fillcolor=lavender];
 
     start -> preamble
     preamble -> coverpage [label=" \\begin{document}"]
@@ -30,6 +32,9 @@ digraph partmc_modules {
     variant -> answers [label=" \\begin{answers}   "]
     variant -> variant [label=" <text>", dir=back]
     answers -> answer [label="\\answer          \n\\correctanswer   "]
-    answer -> question [label=" \\end{answers}"]
+    answer -> presolution [label=" \\end{answers}"]
     answer -> answer [label="\n <text>        \n \\answer       \n \\correctanswer", dir=back]
+    presolution -> solution [label="\\begin{solution}"]
+    solution -> question [label=" \\end{solution}"]
+    solution -> solution [label=" <text>", dir=back]
 }
