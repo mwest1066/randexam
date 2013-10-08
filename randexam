@@ -2,7 +2,7 @@
 
 VERSION = "1.2.0"
 
-import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections
+import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
 import numpy as np
 import scipy.interpolate
@@ -20,13 +20,12 @@ N_A = 5 # maximum number of answers per question
 LAST_SCANTRON_QUESTION_NUMBER = 96
 RANDOM_SEED = 3 # determines the random output
 
+ONE_PAGE_PER_QUESTION = False # if True, every question goes on its own page
 MINIMUM_EXAM_PAGES = 34
 
 # email information
 MAIL_SERVER = "smtp.illinois.edu"
-#MAIL_SERVER = "express-smtp.cites.uiuc.edu"
-FROM_ADDRESS = "mwest@illinois.edu"
-TO_DOMAIN = "illinois.edu"
+MAIL_DOMAIN = "illinois.edu"
 
 ######################################################################
 ######################################################################
@@ -95,7 +94,7 @@ def main():
         (K, Q, V, A) = generate_specs(library, N_e, N_A)
         check_key_distances(K)
         write_specs(SPECS_FILENAME, K, Q, V, A)
-        write_exams(EXAMS_FILENAME, library, K, Q, V, A, MINIMUM_EXAM_PAGES)
+        write_exams(EXAMS_FILENAME, library, K, Q, V, A, MINIMUM_EXAM_PAGES, ONE_PAGE_PER_QUESTION)
         c = generate_solutions(Q, V, A, C)
         write_solutions(SOLUTIONS_FILENAME, K, c)
         write_full_solutions(FULL_SOLUTIONS_FILENAME, library, K, Q, V, A)
@@ -133,7 +132,7 @@ def main():
         init_logging(LOG_PROC_EMAIL_FILENAME)
         log_and_print("randexam version %s" % VERSION)
         (u, k, a) = read_answers(ANSWERS_FILENAME)
-        send_email(FEEDBACK_DIRECTORY, MAIL_SERVER, FROM_ADDRESS, TO_DOMAIN, TEST_NAME, u)
+        send_email(FEEDBACK_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN, TEST_NAME, u)
     elif sys.argv[1] == "proc-curve":
         init_logging(LOG_PROC_CURVE_FILENAME)
         log_and_print("randexam version %s" % VERSION)
@@ -793,8 +792,8 @@ def check_key_distances(K):
 ######################################################################
 ######################################################################
 
-def write_exams(output_filename, library, K, Q, V, A, min_pages):
-    """write_exams(output_filename, library, K, Q, V, A, min_pages)
+def write_exams(output_filename, library, K, Q, V, A, min_pages, one_page_per_q):
+    """write_exams(output_filename, library, K, Q, V, A, min_pages, one_page_per_q)
 
     Write the generated exams to the exams.tex file, padding each exam
     to be at least min_pages long.
@@ -838,9 +837,11 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages):
                 out_f.write("%% Zone %d\n\n" % (i_zone + 1))
                 out_f.write(zone.body + "\n\n")
                 for i_zone_question in range(len(zone.questions)):
-                    out_f.write(r"\newpage" + "\n")
+                    if one_page_per_q:
+                        out_f.write(r"\newpage" + "\n")
                     out_f.write(r"\noindent" + "\n")
-                    #out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                    if not one_page_per_q:
+                        out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
                     points = flat_questions[Q[ei,qi]].points
                     out_f.write(r"%d. (%g %s)" % (qi + 1, points,
                                                   "point" if points == 1 else "points")
@@ -854,9 +855,10 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages):
                             out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
                             out_f.write(variant.answers[Ai].body + "\n")
                     out_f.write(r"\end{enumerate}" + "\n")
-                    #out_f.write(r"\vspace*{10em}" + "\n")
-                    #out_f.write(r"\end{minipage}" + "\n")
-                    #out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
+                    if not one_page_per_q:
+                        out_f.write(r"\vspace*{10em}" + "\n")
+                        out_f.write(r"\end{minipage}" + "\n")
+                        out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
 
                     qi += 1
 
@@ -2027,7 +2029,7 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
 
     log("Successfully completed writing feedback files")
 
-def send_email(input_directory, mail_server, from_address, to_domain, subject_line, u):
+def send_email(input_directory, mail_server, mail_domain, subject_line, u):
     log_and_print("Sending feedback emails from directory: %s" % input_directory)
 
     N_s = u.shape[0]
@@ -2036,7 +2038,7 @@ def send_email(input_directory, mail_server, from_address, to_domain, subject_li
 
     sending_netid = raw_input("NetID of sending user: ")
     sending_password = getpass.getpass("Active Directory password: ")
-    from_address = sending_netid + "@illinois.edu"
+    from_address = sending_netid + "@" + mail_domain
 
     log_and_print("Sending mail from: %s" % from_address)
     log_and_print("Subject line: %s" % subject_line)
@@ -2047,6 +2049,8 @@ def send_email(input_directory, mail_server, from_address, to_domain, subject_li
         if index_in_block >= 50: # number of emails per connect session
             index_in_block = 0
             log_and_print("Re-connecting to mail server")
+            log_and_print("Sleeping for 60 seconds")
+            time.sleep(60)
             log_and_print("Quitting current connection")
             smtp.quit()
 
@@ -2084,7 +2088,7 @@ def send_email(input_directory, mail_server, from_address, to_domain, subject_li
         index_in_block += 1
 
         student_netid = u[si,3].lower()
-        to_address = student_netid + "@" + to_domain
+        to_address = student_netid + "@" + mail_domain
         input_basename = student_netid + ".pdf"
         input_filename = os.path.join(input_directory, input_basename)
 
