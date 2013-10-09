@@ -21,7 +21,7 @@ LAST_SCANTRON_QUESTION_NUMBER = 96
 RANDOM_SEED = 3 # determines the random output
 
 ONE_PAGE_PER_QUESTION = False # if True, every question goes on its own page
-MINIMUM_EXAM_PAGES = 6 # should be an even number
+MINIMUM_EXAM_PAGES = 4 # should be an even number
 
 # email information
 MAIL_SERVER = "smtp.illinois.edu"
@@ -819,6 +819,7 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages, one_page_per_q)
         out_f.write(r"\maxrawpages=0" + "\n")
         out_f.write(r"\maxpadpages=0" + "\n")
         out_f.write(r"\minpadpages=1000000" + "\n")
+        out_f.write(r"\newcount\padcount" + "\n")
         out_f.write("\n")
 
         for ei in range(N_e):
@@ -868,7 +869,14 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages, one_page_per_q)
             out_f.write("\n")
             out_f.write(r"\ifnum\maxrawpages<\thepage \maxrawpages=\thepage\fi" + "\n")
             out_f.write("\n")
-            out_f.write(r"\ifnum\thepage<%d \foreach\x in {\value{page},...,%d}{\newpage \ \par \vspace*{\fill}\centerline{This page is intentionally left blank.}\vspace*{\fill}} \fi" % (min_pages, min_pages) + "\n")
+            out_f.write(r"\ifnum\thepage<%d" % min_pages + "\n")
+            out_f.write(r"\padcount=\thepage" + "\n")
+            out_f.write(r"\loop" + "\n")
+            out_f.write(r"\newpage \ \par \vspace*{\fill}\centerline{This page is intentionally left blank.}\vspace*{\fill}" + "\n")
+            out_f.write(r"\advance \padcount 1" + "\n")
+            out_f.write(r"\ifnum \padcount<%d" % min_pages + "\n")
+            out_f.write(r"\repeat" + "\n")
+            out_f.write(r"\fi" + "\n")
             out_f.write("\n")
             out_f.write(r"\ifnum\maxpadpages<\thepage \maxpadpages=\thepage\fi" + "\n")
             out_f.write("\n")
