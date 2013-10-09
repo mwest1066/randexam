@@ -210,6 +210,7 @@ class Library:
     """Data contained in the library.tex file.
     """
     def __init__(self):
+        self.preamble = ""
         self.coverpage = ""
         self.zones = []
 
@@ -391,6 +392,11 @@ def read_library(input_filename):
             state.answer.line_number = i_line + 1
             state.answer.body = match.group("tail").strip()
             state.answer.correct = correct
+        def append_to_preamble():
+            file_log("appending line to preamble")
+            if len(library.preamble) > 0:
+                library.preamble += "\n"
+            library.preamble += line
         def append_to_coverpage():
             file_log("appending line to coverpage")
             if len(library.coverpage) > 0:
@@ -419,8 +425,8 @@ def read_library(input_filename):
 
         if state.name == "preamble":
             if match_name == "begin_document":   transition("coverpage")
-            elif match_name == "text":           file_log("skipping text line")
-            elif match_name == "blank":          file_log("skipping blank line")
+            elif match_name == "text":           append_to_preamble()
+            elif match_name == "blank":          append_to_preamble()
             else: bad_transition()
         elif state.name == "coverpage":
             if match_name == "text":             append_to_coverpage()
@@ -803,13 +809,8 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages, one_page_per_q)
 
     flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
     with open(output_filename, "w") as out_f:
-        out_f.write(r"\documentclass[twoside]{article}" + "\n")
-        out_f.write(r"\usepackage{amsmath,amssymb}" + "\n")
-        out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
-        out_f.write(r"\usepackage{enumerate}" + "\n")
-        out_f.write(r"\usepackage{pgffor}" + "\n")
-        out_f.write(r"\usepackage{tikz}" + "\n")
-        out_f.write(r"\usetikzlibrary{arrows,positioning,calc,intersections}" + "\n")
+        out_f.write(library.preamble + "\n")
+        out_f.write("\n")
         out_f.write(r"\begin{document}" + "\n")
         out_f.write("\n")
         out_f.write(r"\newcount\maxrawpages" + "\n")
@@ -1942,13 +1943,8 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
         output_basename = student_netid + ".tex"
         output_filename = os.path.join(output_directory, output_basename)
         with open(output_filename, "w") as out_f:
-            out_f.write(r"\documentclass[12pt]{article}" + "\n")
-            out_f.write(r"\usepackage{amsmath,amssymb,multicol,color}" + "\n")
-            out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
-            out_f.write(r"\usepackage{graphicx}" + "\n")
-            out_f.write(r"\usepackage{enumerate}" + "\n")
-            out_f.write(r"\usepackage{tikz}" + "\n")
-            out_f.write(r"\usetikzlibrary{arrows,positioning,calc,intersections}" + "\n")
+            out_f.write(library.preamble + "\n")
+            out_f.write("\n")
             out_f.write(r"\begin{document}" + "\n")
             out_f.write(r"\centerline{{\bf\Large %s: Solution Key}}" % test_name + "\n")
             out_f.write(r"\vspace{.2in}" + "\n")
@@ -2120,12 +2116,8 @@ def write_full_solutions(output_filename, library, K, Q, V, A):
 
     flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
     with open(output_filename, "w") as out_f:
-        out_f.write(r"\documentclass[twoside]{article}" + "\n")
-        out_f.write(r"\usepackage{amsmath,amssymb}" + "\n")
-        out_f.write(r"\usepackage[margin=2.5cm]{geometry}" + "\n")
-        out_f.write(r"\usepackage{enumerate}" + "\n")
-        out_f.write(r"\usepackage{tikz}" + "\n")
-        out_f.write(r"\usetikzlibrary{arrows,positioning,calc,intersections}" + "\n")
+        out_f.write(library.preamble + "\n")
+        out_f.write("\n")
         out_f.write(r"\begin{document}" + "\n")
 
         for ei in range(N_e):

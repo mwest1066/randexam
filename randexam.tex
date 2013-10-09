@@ -119,11 +119,6 @@ Figure~\ref{fig:statemachine}. Note the following points:
 \item Questions do not have any text associated with them directly. If
   there is text that is common to all variants of a question then it
   must be repeated in each variant.
-\item The preamble in \texttt{library.tex} is discarded when it is
-  processed and the preamble of \texttt{exams.tex} is hard-coded in
-  the \texttt{randexam} script. To modify the \texttt{exams.tex}
-  preamble, for example to include another package, the
-  \texttt{randexam} script should be edited directly.
 \end{itemize}
 
 \begin{figure}
@@ -165,6 +160,7 @@ Figure~\ref{fig:statemachine}. Note the following points:
 \begin{minipage}{14em}
 \dirtree{%
 .1 library.
+.2 preamble text.
 .2 coverpage text.
 .2 zone 1.
 .3 zone text.

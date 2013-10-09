@@ -1,4 +1,10 @@
 
+1.7.0 - XXXX-XX-XX
+
+  * Add note to blank padding pages.
+
+  * Use preamble from library.tex for output tex files.
+
 1.6.0 - 2013-10-08
 
   * Output score arrays as CSV files.
