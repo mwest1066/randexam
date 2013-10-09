@@ -24,6 +24,7 @@ ONE_PAGE_PER_QUESTION = False # if True, every question goes on its own page
 MINIMUM_EXAM_PAGES = 4 # should be an even number
 
 CHECK_VALID_NETIDS = True # whether to check that NetIDs are valid (requires NetID list)
+CHECK_REPEATED_EXAM_KEYS = True # whether to check if multiple students used the same exam key
 
 # email information
 MAIL_SERVER = "smtp.illinois.edu"
@@ -109,6 +110,8 @@ def main():
         if CHECK_VALID_NETIDS:
             netids = read_netids(NETIDS_FILENAME)
             check_netids(u, netids)
+        if CHECK_REPEATED_EXAM_KEYS:
+            check_repeated_exam_keys(u, k)
         write_answers(ANSWERS_FILENAME, u, k, a)
     elif sys.argv[1] == "proc-ans":
         init_logging(LOG_PROC_ANS_FILENAME)
@@ -1131,6 +1134,29 @@ def check_netids(u, netids):
     if netid_check_ok:
         log_and_print("NetID check successful")
     log("Successfully completed checking NetIDs")
+
+######################################################################
+######################################################################
+
+def check_repeated_exam_keys(u, k):
+    log_and_print("Checking for repeated exam keys")
+    key_to_uids = {}
+    N_s = u.shape[0]
+    for si in range(N_s):
+        netid = u[si,3]
+        key = k[si]
+        if key not in key_to_uids:
+            key_to_uids[key] = []
+        key_to_uids[key].append(netid)
+    unique_keys = True
+    for (key, netids) in key_to_uids.iteritems():
+        if len(netids) > 1:
+            unique_keys = False
+            log_and_print("WARNING: Exam key %s used by %d students: %s"
+                          % (key, len(netids), " ".join(netids)))
+    if unique_keys:
+        log_and_print("All exam keys were used at most once")
+    log("Successfully completed checking for repeated exam keys")
 
 ######################################################################
 ######################################################################

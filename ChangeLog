@@ -9,6 +9,8 @@
 
   * Make NetID checks optional.
 
+  * Check for repeated exam keys.
+
 1.6.0 - 2013-10-08
 
   * Output score arrays as CSV files.
