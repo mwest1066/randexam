@@ -7,6 +7,8 @@
 
   * Remove need for pgffor package.
 
+  * Make NetID checks optional.
+
 1.6.0 - 2013-10-08
 
   * Output score arrays as CSV files.

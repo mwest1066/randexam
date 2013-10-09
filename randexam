@@ -23,6 +23,8 @@ RANDOM_SEED = 3 # determines the random output
 ONE_PAGE_PER_QUESTION = False # if True, every question goes on its own page
 MINIMUM_EXAM_PAGES = 4 # should be an even number
 
+CHECK_VALID_NETIDS = True # whether to check that NetIDs are valid (requires NetID list)
+
 # email information
 MAIL_SERVER = "smtp.illinois.edu"
 MAIL_DOMAIN = "illinois.edu"
@@ -104,8 +106,9 @@ def main():
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         N_Q = Q.shape[1]
         (u, k, a) = read_scantrons(SCANTRON_FILENAME, N_e, N_Q, N_A)
-        netids = read_netids(NETIDS_FILENAME)
-        check_netids(u, netids)
+        if CHECK_VALID_NETIDS:
+            netids = read_netids(NETIDS_FILENAME)
+            check_netids(u, netids)
         write_answers(ANSWERS_FILENAME, u, k, a)
     elif sys.argv[1] == "proc-ans":
         init_logging(LOG_PROC_ANS_FILENAME)
@@ -1112,15 +1115,21 @@ def check_netids(u, netids):
     netids_scantron = set([u[si,3] for si in range(N_s)])
     netids_file_not_scantron = netids_file - netids_scantron
     netids_scantron_not_file = netids_scantron - netids_file
+    netid_check_ok = True
     for netid in netids_file:
         if netids_file_count[netid] > 1:
+            netid_check_ok = False
             log_and_print("WARNING: Scantron NetID \"%s\" found multiple times." % netid)
     for netid in netids_scantron_not_file:
+        netid_check_ok = False
         matches = difflib.get_close_matches(netid, netids_file_not_scantron)
         log_and_print("WARNING: Scantron NetID \"%s\" not found. Possible matches: %s"
                       % (netid, ", ".join(matches)))
     for netid in netids_file_not_scantron:
+        netid_check_ok = False
         log_and_print("WARNING: NetID \"%s\" from netids file not found in Scantron." % netid)
+    if netid_check_ok:
+        log_and_print("NetID check successful")
     log("Successfully completed checking NetIDs")
 
 ######################################################################
