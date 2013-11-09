@@ -10,9 +10,11 @@ all: randexam.pdf
 release: $(RELEASE_NAME).tar.gz
 
 $(RELEASE_NAME).tar.gz: randexam.pdf
+	grep -q $(VERSION) randexam
 	grep -q $(VERSION) README.md
 	grep -q $(VERSION) ChangeLog
 	grep -q $(VERSION) randexam.tex
+	grep -q $(RELEASE_DATE) randexam
 	grep -q $(RELEASE_DATE) README.md
 	grep -q $(RELEASE_DATE) ChangeLog
 	grep -q $(RELEASE_DATE) randexam.tex
