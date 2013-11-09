@@ -3,6 +3,8 @@
 
   * Allow variants to have no answers.
 
+  * Add "number of perfect scores" to statistics PDF.
+
 1.7.0 - 2013-10-09
 
   * Add note to blank padding pages.
