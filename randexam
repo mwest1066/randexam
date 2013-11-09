@@ -457,6 +457,7 @@ def read_library(input_filename):
             if match_name == "text":             append_to_variant_body()
             elif match_name == "blank":          append_to_variant_body()
             elif match_name == "begin_answers":  transition("answers")
+            elif match_name == "begin_solution": transition("solution")
             else: bad_transition()
         elif state.name == "answers":
             if match_name == "correct_answer":   transition("answer"); new_answer(correct=True)
@@ -511,8 +512,8 @@ def check_library(library):
                 if len(variant.body) == 0:
                     errors.append("question %d, variant %d (line %d): no body text"
                                   % (Qi + 1, i_variant + 1, variant.line_number))
-                if len(variant.answers) < 2:
-                    errors.append("question %d, variant %d (line %d): less than 2 answers"
+                if len(variant.answers) == 1:
+                    errors.append("question %d, variant %d (line %d): only 1 answer"
                                   % (Qi + 1, i_variant + 1, variant.line_number))
                 correct_answer_indexes = []
                 for (i_answer, answer) in enumerate(variant.answers):
@@ -521,15 +522,17 @@ def check_library(library):
                                       % (Qi + 1, i_variant + 1, i_answer + 1, answer.line_number))
                     if answer.correct:
                         correct_answer_indexes.append(i_answer)
-                if len(correct_answer_indexes) == 0:
+                if len(variant.answers) > 0 and len(correct_answer_indexes) == 0:
                     errors.append("question %d, variant %d (line %d): no correct answer"
                                   % (Qi + 1, i_variant + 1, variant.line_number))
                 if len(correct_answer_indexes) > 1:
                     errors.append("question %d, variant %d (line %d): more than one correct answer"
                                   % (Qi + 1, i_variant + 1, variant.line_number))
-                variant_infos.append("V%d-S%d-%s"
-                                     % (i_variant + 1, len(variant.answers),
-                                        "".join([ind2chr(i) for i in correct_answer_indexes])))
+                if len(variant.answers) > 0:
+                    answer_letters = "".join([ind2chr(i) for i in correct_answer_indexes])
+                else:
+                    answer_letters = "*"
+                variant_infos.append("V%d-S%d-%s" % (i_variant + 1, len(variant.answers), answer_letters))
             log_and_print("    Question %d (%g points): %s" % (Qi + 1, question.points, ", ".join(variant_infos)))
             total_points += question.points
             Qi += 1
@@ -858,13 +861,15 @@ def write_exams(output_filename, library, K, Q, V, A, min_pages, one_page_per_q)
                                 + "\n")
                     variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
                     out_f.write(variant.body + "\n")
-                    out_f.write(r"\begin{enumerate}" + "\n")
-                    for ai in range(N_A):
-                        Ai = chr2ind(A[ei,qi,ai])
-                        if Ai >= 0:
-                            out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
-                            out_f.write(variant.answers[Ai].body + "\n")
-                    out_f.write(r"\end{enumerate}" + "\n")
+                    n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
+                    if n_answers > 0:
+                        out_f.write(r"\begin{enumerate}" + "\n")
+                        for ai in range(N_A):
+                            Ai = chr2ind(A[ei,qi,ai])
+                            if Ai >= 0:
+                                out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                                out_f.write(variant.answers[Ai].body + "\n")
+                        out_f.write(r"\end{enumerate}" + "\n")
                     if not one_page_per_q:
                         out_f.write(r"\vspace*{10em}" + "\n")
                         out_f.write(r"\end{minipage}" + "\n")
@@ -914,6 +919,7 @@ def generate_solutions(Q, V, A, C):
     c = np.zeros((N_e, N_Q), dtype=str)
     for ei in range(N_e):
         for qi in range(N_Q):
+            c[ei,qi] = ind2chr(-1)
             for ai in range(N_A):
                 if A[ei,qi,ai] == C[Q[ei,qi], V[ei,qi]]:
                     c[ei,qi] = ind2chr(ai)
@@ -1435,7 +1441,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.P_max = d.P_max_Q.sum()
     write_csv(output_prefix + "_P_max.csv", ["P_max"], d.P_max)
 
-    d.Phat_Q = d.Pbar_Q / d.P_max_Q
+    d.Phat_Q = d.Pbar_Q / np.where(d.P_max_Q > 0, d.P_max_Q, 1)
     write_csv(output_prefix + "_Phat_Q.csv", ["Q", "Phat(Q)"], d.Phat_Q)
 
     d.R_QV = np.zeros((d.N_Q, d.N_V))
@@ -1541,7 +1547,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
     d.Phat_gQ = np.zeros((d.N_g, d.N_Q))
     for gi in range(d.N_g):
         for Qi in range(d.N_Q):
-            d.Phat_gQ[gi,Qi] = d.Pbar_gQ[gi,Qi] / d.P_max_Q[Qi]
+            d.Phat_gQ[gi,Qi] = d.Pbar_gQ[gi,Qi] / max(1, d.P_max_Q[Qi])
     write_csv(output_prefix + "_Phat_gQ.csv", ["g", "Phat(g,Q=%d)"], d.Phat_gQ)
 
     log("Successfully completed generating scores and statistics")
@@ -1731,12 +1737,14 @@ def write_stats_tex_question_summary(out_f, d):
 
     out_f.write(r"\addplot coordinates {" + "\n")
     for Qi in range(d.N_Q):
-        out_f.write(r"(%d,%g)" % (Qi + 1, d.D_Q[Qi] * 100) + "\n")
+        if d.P_max_Q[Qi] > 0:
+            out_f.write(r"(%d,%g)" % (Qi + 1, d.D_Q[Qi] * 100) + "\n")
     out_f.write(r"};" + "\n")
 
     out_f.write(r"\addplot coordinates {" + "\n")
     for Qi in range(d.N_Q):
-        out_f.write(r"(%d,%g)" % (Qi + 1, d.r_P_Q[Qi] * 100) + "\n")
+        if d.P_max_Q[Qi] > 0:
+            out_f.write(r"(%d,%g)" % (Qi + 1, d.r_P_Q[Qi] * 100) + "\n")
     out_f.write(r"};" + "\n")
 
     out_f.write(r"\legend{difficulty $D_{\rm Q}(Q)$,discrimination $r^{\rm P}_{\rm Q}(Q)$};" + "\n")
@@ -1758,16 +1766,17 @@ def write_stats_tex_variant_summary(out_f, d):
     out_f.write(r"]" + "\n")
 
     for Qi in range(d.N_Q):
-        out_f.write(r"\addplot[mark=none,draw=black,thick,forget plot] coordinates {" + "\n")
-        R_vals = [d.R_QV[Qi,Vi] for Vi in range(d.N_V) if d.n_s_QV[Qi,Vi] > 0]
-        out_f.write(r"(%g,%g)" % (Qi + 1, min(R_vals) * 100) + "\n")
-        out_f.write(r"(%g,%g)" % (Qi + 1, max(R_vals) * 100) + "\n")
-        out_f.write(r"};" + "\n")
+        if d.P_max_Q[Qi] > 0:
+            out_f.write(r"\addplot[mark=none,draw=black,thick,forget plot] coordinates {" + "\n")
+            R_vals = [d.R_QV[Qi,Vi] for Vi in range(d.N_V) if d.n_s_QV[Qi,Vi] > 0]
+            out_f.write(r"(%g,%g)" % (Qi + 1, min(R_vals) * 100) + "\n")
+            out_f.write(r"(%g,%g)" % (Qi + 1, max(R_vals) * 100) + "\n")
+            out_f.write(r"};" + "\n")
 
     for Vi in range(d.N_V):
         out_f.write(r"\addplot+[only marks] coordinates {" + "\n")
         for Qi in range(d.N_Q):
-            if d.n_s_QV[Qi,Vi] > 0:
+            if d.P_max_QV[Qi,Vi] > 0 and d.n_s_QV[Qi,Vi] > 0:
                 out_f.write(r"(%d,%g)" % (Qi + 1, d.R_QV[Qi,Vi] * 100) + "\n")
         out_f.write(r"};" + "\n")
 
@@ -1793,7 +1802,8 @@ def write_stats_tex_question_summary_scatter(out_f, d):
 
     out_f.write(r"\addplot coordinates {" + "\n")
     for Qi in range(d.N_Q):
-        out_f.write(r"(%g,%g) [%d]" % (d.D_Q[Qi] * 100, d.r_P_Q[Qi] * 100, Qi + 1) + "\n")
+        if d.P_max_Q[Qi] > 0:
+            out_f.write(r"(%g,%g) [%d]" % (d.D_Q[Qi] * 100, d.r_P_Q[Qi] * 100, Qi + 1) + "\n")
     out_f.write(r"};" + "\n")
 
     out_f.write(r"\end{axis}" + "\n")
@@ -2036,21 +2046,23 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, a, e,
                                 + "\n")
                     variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
                     out_f.write(variant.body + "\n")
-                    out_f.write(r"\begin{enumerate}" + "\n")
-                    for ai in range(N_A):
-                        Ai = chr2ind(A[ei,qi,ai])
-                        if Ai >= 0:
-                            out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
-                            out_f.write(variant.answers[Ai].body + "\n")
-
-                    out_f.write(r"\end{enumerate}" + "\n")
-
-                    answer_color = "blue" if (a[si,qi] == c[ei,qi]) else "red"
-                    out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
-                                % (c[ei,qi], answer_color, a[si,qi]))
-                    out_f.write(r"{\bf %d} out of {\bf %d} %s received"
-                                % (P_sq[si,qi], points, "point" if points == 1 else "points")
-                                + "\n")
+                    n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
+                    if n_answers > 0:
+                        out_f.write(r"\begin{enumerate}" + "\n")
+                        for ai in range(N_A):
+                            Ai = chr2ind(A[ei,qi,ai])
+                            if Ai >= 0:
+                                out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                                out_f.write(variant.answers[Ai].body + "\n")
+                        out_f.write(r"\end{enumerate}" + "\n")
+                        answer_color = "blue" if (a[si,qi] == c[ei,qi]) else "red"
+                        out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
+                                    % (c[ei,qi], answer_color, a[si,qi]))
+                        out_f.write(r"{\bf %d} out of {\bf %d} %s received"
+                                    % (P_sq[si,qi], points, "point" if points == 1 else "points")
+                                    + "\n")
+                    else:
+                        out_f.write(r"{\color{blue}{\bf No multiple-choice answers.}}" + "\n");
                     out_f.write(r"\vspace{1em}"+"\n")
                     out_f.write(r"\hrule" + "\n")
                     out_f.write(r"\vspace{1em}"+"\n")
@@ -2193,18 +2205,20 @@ def write_full_solutions(output_filename, library, K, Q, V, A):
                     variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
                     out_f.write(variant.body + "\n")
                     out_f.write("\n")
-                    out_f.write(r"\begin{enumerate}" + "\n")
-                    for ai in range(N_A):
-                        Ai = chr2ind(A[ei,qi,ai])
-                        if Ai >= 0:
-                            if variant.answers[Ai].correct:
-                                out_f.write(r"\item[(%s)] $\bigstar$ " % ind2chr(ai) + "\n")
-                                out_f.write(variant.answers[Ai].body + "\n")
-                            else:
-                                out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
-                                out_f.write(variant.answers[Ai].body + "\n")
-                    out_f.write(r"\end{enumerate}" + "\n")
-                    out_f.write("\n")
+                    n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
+                    if n_answers > 0:
+                        out_f.write(r"\begin{enumerate}" + "\n")
+                        for ai in range(N_A):
+                            Ai = chr2ind(A[ei,qi,ai])
+                            if Ai >= 0:
+                                if variant.answers[Ai].correct:
+                                    out_f.write(r"\item[(%s)] $\bigstar$ " % ind2chr(ai) + "\n")
+                                    out_f.write(variant.answers[Ai].body + "\n")
+                                else:
+                                    out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                                    out_f.write(variant.answers[Ai].body + "\n")
+                        out_f.write(r"\end{enumerate}" + "\n")
+                        out_f.write("\n")
                     out_f.write(r"\vspace*{2em}" + "\n")
                     out_f.write(r"\hrule" + "\n")
                     out_f.write(r"\vspace{2em}"+"\n")

@@ -31,6 +31,7 @@ digraph partmc_modules {
     question -> end [label="\\end{document}"]
     variant -> answers [label=" \\begin{answers}   "]
     variant -> variant [label=" <text>", dir=back]
+    variant -> solution [label=" \\begin{solution}"]
     answers -> answer [label="\\answer          \n\\correctanswer   "]
     answer -> presolution [label=" \\end{answers}"]
     answer -> answer [label="\n <text>        \n \\answer       \n \\correctanswer", dir=back]
