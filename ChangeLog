@@ -9,6 +9,8 @@
 
   * Fix 'make release' to check version/date in randexam.
 
+  * Fix P_max_QV variable documentation.
+
 1.7.0 - 2013-10-09
 
   * Add note to blank padding pages.
