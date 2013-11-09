@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 VERSION = "1.6.0"
+RELEASE_DATE = "2013-10-09"
 
 import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
@@ -67,7 +68,7 @@ LOG_PROC_CURVE_FILENAME = FILENAME_PREFIX + "proc_curve.log"
 
 def main():
     if len(sys.argv) != 2:
-        print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         print("")
         print("usage: randexam <command>")
         print("")
@@ -88,7 +89,7 @@ def main():
                   % " ".join(protected_filenames))
             sys.exit(1)
         init_logging(LOG_PROC_LIB_FILENAME)
-        log_and_print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         random.seed(RANDOM_SEED)
         library = read_library(LIBRARY_FILENAME)
         check_library(library)
@@ -103,7 +104,7 @@ def main():
         write_full_solutions(FULL_SOLUTIONS_FILENAME, library, K, Q, V, A)
     elif sys.argv[1] == "proc-scan":
         init_logging(LOG_PROC_SCAN_FILENAME)
-        log_and_print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         N_Q = Q.shape[1]
         (u, k, a) = read_scantrons(SCANTRON_FILENAME, N_e, N_Q, N_A)
@@ -115,7 +116,7 @@ def main():
         write_answers(ANSWERS_FILENAME, u, k, a)
     elif sys.argv[1] == "proc-ans":
         init_logging(LOG_PROC_ANS_FILENAME)
-        log_and_print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         (u, k, a) = read_answers(ANSWERS_FILENAME)
         P = read_points(POINTS_FILENAME)
@@ -125,7 +126,7 @@ def main():
         write_statistics(STATS_FILENAME, TEST_NAME, d)
     elif sys.argv[1] == "proc-feedback":
         init_logging(LOG_PROC_FEEDBACK_FILENAME)
-        log_and_print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         library = read_library(LIBRARY_FILENAME)
         (P, C) = extract_points(library, N_A)
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
@@ -136,12 +137,12 @@ def main():
         generate_feedback(FEEDBACK_DIRECTORY, TEST_NAME, library, Q, V, A, u, k, a, e, P_sq, P_s, c)
     elif sys.argv[1] == "proc-email":
         init_logging(LOG_PROC_EMAIL_FILENAME)
-        log_and_print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         (u, k, a) = read_answers(ANSWERS_FILENAME)
         send_email(FEEDBACK_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN, TEST_NAME, u)
     elif sys.argv[1] == "proc-curve":
         init_logging(LOG_PROC_CURVE_FILENAME)
-        log_and_print("randexam version %s" % VERSION)
+        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         library = read_library(LIBRARY_FILENAME)
         (P, C) = extract_points(library, N_A)
         (u, P_s) = read_scores(SCORES_FILENAME)
