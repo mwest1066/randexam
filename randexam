@@ -2115,7 +2115,7 @@ def send_email(input_directory, mail_server, mail_domain, subject_line, u):
             index_in_block = 0
             log_and_print("Quitting current connection")
             smtp.quit()
-            log_and_print("Sleeping for 60 seconds")
+            log_and_print("Sleeping for %d seconds" % min_block_send_time)
             time.sleep(min_block_send_time)
 
         if index_in_block == 0:
