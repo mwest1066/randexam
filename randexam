@@ -1384,7 +1384,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, a):
             Ai = chr2ind(d.A[ei,qi,ai])
             Qi = d.Q[ei,qi]
             Vi = d.V[ei,qi]
-            if ei >= 0 and Ai >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
+            if ei >= 0 and ai >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
                 d.n_a_QVA[Qi,Vi,Ai] += 1
     write_csv(output_prefix + "_n_a_QVA.csv", ["Q", "V", "n_a(Q,V,A=%s)"], d.n_a_QVA,
               index_formats=['i', 'i', 'c'])
