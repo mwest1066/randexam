@@ -326,17 +326,24 @@ The derivation of $c(e,q)$ is then:
   A(e,q,c(e,q)) = C\big( Q(e,q), V(e,q) \big).
 \end{equation}
 
+% :: DRT
 \subsection{\texttt{scantron.dat}}
 
-This is the raw data file from the Scantron machine. It contains lines
+This is the raw data file from the Scantron machine. There are two possible formats for the scantron data, depending on whether students are allowed to bubble in more than one answer. Selecting multiple answers is a possible approach for partial credit (where a student may get half or third credit if they select two or three answers, for example). The difference in the dat file is how the answers are encoded. If only a single answer is allowed, then it contains lines
 like:
 \begin{verbatim}
 721000001001120412001Y  5380     1    N DEVILLE   R993502067   RDEVILLE 434
 721000002001120412001Y  5380     1    N WEST      M795969582   MWEST    252
 \end{verbatim}
+If, instead, multiple answers are allowed, the question information is encoded in a two-digit ``binary'' format ($2^0$ = A, $2^1$ = B, \dots, $2^4$ = E), where number is the sum of all selected answers. The dat file then contains lines like:
+\begin{verbatim}
+721000001001120412001Y  5380     1    N DEVILLE   R993502067   RDEVILLE 080412
+721000002001120412001Y  5380     1    N WEST      M795969582   MWEST    021601
+\end{verbatim}
 The actual files send from the scanning office should be renamed to
-\verb+scantron.dat+.
+\verb+scantron.dat+. The particular parsing is controlled by the variable \verb+MULTIPLE_ANSWERS_PER_QUESTION+; this variable only controls the parsing.
 
+% :: DRT
 \subsection{\texttt{answers.csv}}
 
 This file is essentially just a CSV version of the data in
@@ -347,27 +354,28 @@ This file is essentially just a CSV version of the data in
     \hline
     $u(s,i)$ & $N_{\rm s} \times 4$
     & student last name, first initial, student ID number, and NetID \\
-    $a(s,q)$ & $N_{\rm s} \times N_{\rm Q}$
-    & answer given to question $q$ by student $s$ \\
+    $b(s,q,a)$ & $N_{\rm s} \times N_{\rm Q} \times N_{\rm A}$
+    & bubble selection of answer $a$ given to question $q$ by student $s$;\\
+    & & 0 = empty, 1 = filled \\
     $k(s)$ & $N_{\rm s}$
     & key filled in by student $s$
   \end{tabular}
 \end{center}
 The first column in the data file is the student number, then the next
 four columns store the student information, the sixth column stores
-the exam key, and then columns 7 and up store the answers to the
+the exam key, and then columns 7 and up store the bubbled-in answers to the
 questions in exam order. As an example:
 \begin{verbatim}
 s,Name,Initial,Number,NetID,k(s),"a(s,q=1)","a(s,q=2)","a(s,q=3)"
-1,DEVILLE,R,993502067,RDEVILLE,CAE,D,C,D
-2,WEST,M,795969582,MWEST,ECB,B,E,B
+1,DEVILLE,R,993502067,RDEVILLE,CAE,D,C,CD
+2,WEST,M,795969582,MWEST,ECB,B,E,AB
 \end{verbatim}
 Here we see the second student has information giving the last name
 $u(2,1) = \mathtt{WEST}$, the first initial $u(2,2) = \mathtt{M}$, the
 student number $u(2,3) = 795969582$, and the NetID $u(2,4) =
 \texttt{MWEST}$. The exam key for this student is $k(2) = \rm ECB$ and
-the student gave answer $a(2,1) = \rm B$ for question 1 on this exam
-paper, answer $a(2,2) = \rm E$ for question 2, etc.
+the student bubbled answers $b(2,1,:) = [0,1,0,0,0]$ (selecting just B) for question 1 on this exam
+paper, bubbled answers $b(2,2,:) = [0,0,0,0,1]$ (selecting just E for question 2, bubbled answers $b(2,3,:) = [1,1,0,0,0]$ (selecting both A and B for question 3, etc.
 
 \subsection{\texttt{scores.csv}}
 
@@ -415,6 +423,7 @@ This array is determined so that
   K(e(s)) = k(s).
 \end{equation}
 
+% :: DRT
 The points awarded to each student can be determined using the grading
 key for any exam, not just the particular exam that the student
 actually took. To make this clear, we consider the arrays
@@ -434,9 +443,11 @@ actually took. To make this clear, we consider the arrays
     & points awarded to student $s$ for library question $Q$ \\
   \end{tabular}
 \end{center}
+We define an array for partial credit $\sigma(n)$ which is the score value multiplier when $n$ answers are selected (e.g., $\sigma(1)=1$ always, but $\sigma(n)=1/n$ can be used to award partial credit, or $\sigma(n)=0$ for $n>1$ will allow no partial credit).
 These quantities are computed by:
 \begin{align}
-  P_{\rm seq}(s,e,q) &= P\Big(Q(e,q), V(e,q), A\big(e,q,a(s,q)\big)\Big) \\
+%  P_{\rm seq}(s,e,q) &= P\Big(Q(e,q), V(e,q), A\big(e,q,a(s,q)\big)\Big) \\
+  P_{\rm seq}(s,e,q) &= \sum_{a=1}^{N_{\rm A}} P\Big(Q(e,q), V(e,q), A(e,q,a)\Big) b(s,q,a) \sigma\Big(\sum_{a'} b(s,q,a')\Big) \\
   P_{\rm se}(s,e) &= \sum_{q = 1}^{N_{\rm Q}} P_{\rm seq}(s,e,q) \\
   P_{\rm sq}(s,q) &= P_{\rm seq}(s,e(s),q) \\
   P_{\rm s}(s) &= P_{\rm se}(s,e(s)) \\
@@ -516,9 +527,11 @@ These quantities are computed by:
   n^{\rm s}_{\rm QV}(\hat{Q},\hat{V}) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{\rm N_{\rm Q}}
   \delta\Big(\hat{Q}, Q\big(e(s),q\big)\Big)
   \ \delta\Big(\hat{V}, V\big(e(s),q\big)\Big) \displaybreak[0] \\
-  n^{\rm a}_{\rm QVA}(\hat{Q},\hat{V},\hat{A}) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{N_{\rm Q}}
+  n^{\rm a}_{\rm QVA}(\hat{Q},\hat{V},\hat{A}) &= \sum_{s = 1}^{N_{\rm s}} \sum_{q = 1}^{N_{\rm Q}}\sum_{a = 1}^{N_{\rm A}}
   \delta\Big( \hat{Q}, Q\big(e(s),q\big) \Big) \ \delta\Big(\hat{V}, V\big(e(s),q\big) \Big)
-  \ \delta\Big( \hat{A}, A\big(e(s),q,a(s,q)\big) \Big) \displaybreak[0] \\
+  \ \delta\Big( \hat{A}, A\big(e(s),q,a\big) \Big)\cdot\\
+ &\qquad b(s,q,a)\sigma\Big(\sum_{a'}b(s,q,a')\Big) \displaybreak[0] \\
+%  \ \delta\Big( \hat{A}, A\big(e(s),q,a(s,q)\big) \Big) \displaybreak[0] \\
   n^{\rm a}_{\rm QV}(Q,V) &= \sum_{A = 1}^{N_{\rm A}} n^{\rm a}_{\rm QVA}(Q,V,A) \displaybreak[0] \\
   n^{\rm na}_{\rm QV}(Q,V) &= n^{\rm s}_{\rm QV}(Q,V) - n^{\rm a}_{\rm QV}(Q,V) \displaybreak[0] \\
   n^{\rm a}_{\rm Q}(Q) &= \sum_{V = 1}^{N_{\rm V}} n^{\rm a}_{\rm QV}(Q,V) \displaybreak[0] \\
@@ -610,6 +623,7 @@ The definitions for the above quantities are:
   \hat{P}_{\rm gQ}(g,Q) &= \frac{\bar{P}_{\rm gQ}(g,Q)}{P^{\rm max}_{\rm Q}(Q)}
 \end{align}
 
+% :: DRT
 \section{Implementation notes}
 
 The randomized exam procedure described in this document is
@@ -643,6 +657,8 @@ q = 0
 a = "D"
 print(A(e, q, chr2ind(a)))
 \end{verbatim}
+
+The bubbled-in answers of students are stored in a ``bubble'' array $b$, which uses 0 for unselected answers and 1 for selections. There are a three conversion routines that deal with the bubble list format: \verb+binary2bubble+, \verb+string2bubble+, and \verb+bubble2string+, which do exactly what they say. The conversions to and from strings make use of the \verb+ch2ind+ and \verb+ind2chr+ routines. The controlling of the parsing is through the \verb+MULTIPLE_ANSWERS_PER_QUESTION+ variable, and the partial credit scoring (the $\sigma(n)$ array) is stored as \verb+SCORE_PER_ANSWERS+.
 
 \section{Key generation}
 
@@ -723,6 +739,7 @@ To prepare a ``Final'' exam, we assume that we are working within a
 
 \subsection{Grading the exams}
 
+% :: DRT
 \begin{itemize}
 \item Make a subdirectory called \texttt{2_scantrons} containing a raw
   unedited copy of the Scantron data files.
@@ -736,6 +753,7 @@ To prepare a ``Final'' exam, we assume that we are working within a
   \texttt{curve_scores()} function in \texttt{randexam} as desired.
 \item Upload \texttt{gradebook.csv} to record the total scores.
 \item Run \texttt{./randexam proc-feedback}.
+\item If desired, create a \verb+rawscan+ directory with PDFs of individual scantron sheets to be included in email feedback.
 \item Run \texttt{./randexam proc-email}.
 \end{itemize}
 
