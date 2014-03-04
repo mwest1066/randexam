@@ -1,6 +1,6 @@
 
-VERSION = 1.8.0
-RELEASE_DATE = 2013-11-09
+VERSION = 1.9.0
+RELEASE_DATE = 2014-03-04
 RELEASE_NAME = randexam-$(VERSION)
 
 RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam.tex randexam.pdf library.tex scantron.dat netids.txt pipeline.gv statemachine.gv
