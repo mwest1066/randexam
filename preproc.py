@@ -3,8 +3,8 @@
 if __name__ == "__main__":
     import sys
     if (len(sys.argv)<2):
-        print "Usage: ", sys.argv[0], " texfile"
-        print """  texfile  texfile to preprocess
+        print "Usage: ", sys.argv[0], " <texfile>"
+        print """  <texfile>  texfile to preprocess
 
 Takes texfile and expands all \input commands.
 Requires that each \input line be of the format:

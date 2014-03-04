@@ -2,19 +2,6 @@
 
 VERSION = "1.8.0"
 RELEASE_DATE = "2013-11-09"
-# Forked version: to handle MULTIPLE_ANSWERS_PER_QUESTION and RAWSCAN
-# Dallas R. Trinkle 2014-02-28
-# Instead of an "a" matrix (answers that students gave), we have a "b" matrix (answers
-# that students bubbled in), which indicates all of the choices that they have made.
-# The variable MULTIPLE_ANSWERS_PER_QUESTION mainly affects the parsing of the .dat
-# file; there are two different versions of the input files in that case.
-# However, the remainder of the code is modified to allow the same algorithms to be
-# used throughout--that is, even for MULTIPLE_ANSWERS_PER_QUESTION = False, all of
-# the processing will remain the same.
-# Also added a variable called RAWSCAN_DIRECTORY; if non-empty, it contains a PDF
-# file for each student (listed by netid), and we attach this to the student's
-# latex-ed feedback, if RAWSCAN_DIRECTORY is not empty.
-# See :: DRT tags for locations of major changes
 
 import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
@@ -25,13 +12,13 @@ import scipy.interpolate
 ######################################################################
 # Configuration
 
-TEST_NAME = "Exam Title"
-FILENAME_PREFIX = ""
+TEST_NAME = "Exam Title, Spring 2071"
+FILENAME_PREFIX = "" # set to "midterm1_" or "final_" or similar
 FEEDBACK_DIRECTORY = "feedback"
-RAWSCAN_DIRECTORY = "rawscan"
+RAWSCAN_DIRECTORY = "" # optional directory containing per-student files <netid>.pdf
 
-MULTIPLE_ANSWERS_PER_QUESTION = True # can students bubble in more than one answer?
-SCORE_PER_ANSWERS = [0, 1., 1./2., 1./3., 0, 0] # partial credit values vs. num bubbles
+MULTIPLE_ANSWERS_PER_QUESTION = False # can students bubble in more than one answer?
+SCORE_PER_ANSWERS = [0., 1., 1./2., 1./3., 0., 0.] # partial credit values vs. num bubbles
 N_e = 10 # number of randomized exams (do not change after running proc-lib)
 N_A = 5 # maximum number of answers per question
 LAST_SCANTRON_QUESTION_NUMBER = 96
@@ -46,6 +33,16 @@ CHECK_REPEATED_EXAM_KEYS = True # whether to check if multiple students used the
 # email information
 MAIL_SERVER = "smtp.illinois.edu"
 MAIL_DOMAIN = "illinois.edu"
+MAIL_SIGNATURE_FILENAME = os.path.expanduser("~/.signature") # set to "" to disable signature searching
+MAIL_MSG_TXT = """
+The attached file contains a summary of your recent test results.
+
+If this email was mistakenly sent to you, please reply and let me know.
+
+Sincerely,
+Your Professor
+
+"""
 
 ######################################################################
 ######################################################################
@@ -155,28 +152,15 @@ def main():
         init_logging(LOG_PROC_EMAIL_FILENAME)
         print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         (u, k, b) = read_answers(ANSWERS_FILENAME)
-        # :: DRT
-        # added msg_txt and .signature
-        msg_txt = """
-The attached file contains a summary of your recent test results.
-
-If this email was mistakenly sent to you, please reply and let me know.
-
-Sincerly,
-Prof. Dallas R. Trinkle
-
-"""
-        # add signature to message
-        signature_filename = os.path.expanduser("~/.signature")
-        if os.path.isfile(signature_filename):
-            with open(signature_filename, "r") as in_f:
-                for line in in_f:
-                    msg_txt = msg_txt + line
+        global MAIL_MSG_TXT
+        if os.path.isfile(MAIL_SIGNATURE_FILENAME):
+            with open(MAIL_SIGNATURE_FILENAME, "r") as in_f:
+                MAIL_MSG_TXT += in_f.read();
         else:
-            log_and_print("No ~/.signature file found.")
+            log_and_print("No signature file found, filename: " + MAIL_SIGNATURE_FILENAME)
         log("Email message text:")
-        log(msg_txt)
-        send_email(FEEDBACK_DIRECTORY, RAWSCAN_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN, TEST_NAME, msg_txt, u)
+        log(MAIL_MSG_TXT)
+        send_email(FEEDBACK_DIRECTORY, RAWSCAN_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN, TEST_NAME, MAIL_MSG_TXT, u)
     elif sys.argv[1] == "proc-curve":
         init_logging(LOG_PROC_CURVE_FILENAME)
         print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
@@ -345,7 +329,6 @@ def chr2ind(char):
         return string.ascii_lowercase.index(char)
     return -1
 
-# :: DRT
 def binary2bubble(index):
     """b = binary2bubble(i)
 
@@ -357,9 +340,8 @@ def binary2bubble(index):
     # We use bitwise shifts to do powers of 2: 1<<N_A == 2**N_A
     if index < 0 or index >= (1<<N_A):
         return [-1]*N_A
-    return [(index & (1<<n))>>n for n in xrange(N_A)]
+    return [(index & (1<<n))>>n for n in range(N_A)]
 
-# :: DRT
 def binary2chr(index):
     """c = binary2chr(i)
 
@@ -373,30 +355,27 @@ def binary2chr(index):
     else:
         return ind2chr(b.index(1))
 
-# :: DRT
 def string2bubble(string):
     """b = string2bubble(s)
 
     Convert the string s to a bubble array, so that b[:] is 0 if not bubbled in,
     and 1 if bubbled in, where we match each character in the string.
     """
-    # b = np.zeros(N_A, dtype=int)
     b = [0]*N_A
     for c in string.upper():
         b[chr2ind(c)] = 1
     return b
 
-# :: DRT
 def bubble2string(bubble):
     """string = bubble2string(bubble)
 
     Convert the bubble array b[N_A] to a string of all the bubbled answers.
     """
-    s=""
+    s = ""
     for ind, b in enumerate(bubble):
-        if b==1:
+        if b == 1:
             s = s + ind2chr(ind)
-    return s        
+    return s
 
 ######################################################################
 ######################################################################
@@ -1057,27 +1036,21 @@ def read_solutions(input_filename):
 ######################################################################
 ######################################################################
 
-# :: DRT
-# iterator to deal with the "binary" encoding--two characters at a time as default
-# returns as string--pass to int() to convert to integers if needed
-# taken from: https://stackoverflow.com/questions/1162592/iterate-over-a-string-2-or-n-characters-at-a-time-in-python
 def slicen(s, n=2, truncate=False):
     """Iterator for a string, to move in groups of n (default = 2) characters through
-    a string.
+    a string. Returns substrings of length n, except for the last entry which may be
+    shorter. If truncate==True then excess trailing characters are not returned.
 
-    Usage: for ind in slicen(string)
+    Usage: for substr in slicen(string)
     """
+    # taken from: https://stackoverflow.com/questions/1162592/iterate-over-a-string-2-or-n-characters-at-a-time-in-python
     assert n>0
     while len(s) >= n:
         yield s[:n]
-        s    = s[n:]
+        s = s[n:]
     if len(s) and not truncate:
         yield s
 
-# :: DRT
-# Main change: all of the bubbled in answers are now *two digits* of binary; so
-# to count the number of entries, we must multiply by 2.
-# We also need to use the binary2bubble to do conversion
 def read_scantrons(input_filename, N_e, N_Q, N_A):
     """(u, k, b) = read_scantrons(input_filename, N_e, N_Q, N_A)
 
@@ -1140,11 +1113,6 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
             answers = check_match(line[72:72 + NCHAR*N_Q], "[^0-9]", 72, "Answers", 0, False)
             key = check_match(line[key_start:key_end], "[^0-9]", key_start, "Key", key_length, False)
 
-            # :: DRT
-            # modified to use slicen() as iterator to go two at a time
-            # switch depending on our input (two-character binary or single number
-            # indicating which single choice was made, which we convert to binary
-            # then to bubble format)
             if MULTIPLE_ANSWERS_PER_QUESTION:
                 answers = [binary2bubble(int(c)) for c in slicen(answers)]
                 key = "".join([binary2chr(int(c)) for c in slicen(key)])
@@ -1170,8 +1138,6 @@ def read_scantrons(input_filename, N_e, N_Q, N_A):
     log("Successfully completed reading Scantron file")
     return (u, k, b)
 
-# :: DRT
-# Modified to take bubble array and write out the CSV file
 def write_answers(output_filename, u, k, b):
     """write_answers(output_filename, u, k, b)
 
@@ -1182,14 +1148,12 @@ def write_answers(output_filename, u, k, b):
     with open(output_filename, 'w') as out_f:
         writer = csv.writer(out_f)
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "k(s)"]
-                        + ["b(s,q=%d)" % (q + 1) for q in range(N_Q)])
+                        + ["b(s,q=%d,:)" % (q + 1) for q in range(N_Q)])
         for si in range(N_s):
             writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], k[si]]
                             + [bubble2string(b[si,qi,:]) for qi in range(N_Q)])
     log("Successfully completed writing answers to file")
 
-# :: DRT
-# Modified to read into bubble array format
 def read_answers(input_filename):
     """(u, k, b) = read_answers(input_filename)
 
@@ -1331,8 +1295,6 @@ def keys_to_exams(K, k, u):
     log("Successfully completed matching keys to exams")
     return e
 
-# :: DRT
-# Modified to handle bubble array
 def generate_scores(P, K, Q, V, A, u, k, b):
     """(e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
 
@@ -1350,14 +1312,13 @@ def generate_scores(P, K, Q, V, A, u, k, b):
     for si in range(N_s):
         for ei in range(N_e):
             for qi in range(N_Q):
-                # :: DRT innermost loop has ai iterate over each bubbled-in selection
-                for ai in xrange(N_A):
+                for ai in range(N_A):
                     if b[si,qi,ai]:
                         Ai = chr2ind(A[ei,qi,ai])
                         Qi = Q[ei,qi]
                         Vi = V[ei,qi]
                         if Ai >= 0 and Qi >= 0 and Vi >= 0:
-                            P_seq[si,ei,qi] += P[Qi,Vi,Ai]*SCORE_PER_ANSWERS[sum(b[si,qi])]
+                            P_seq[si,ei,qi] += P[Qi,Vi,Ai]*SCORE_PER_ANSWERS[sum(b[si,qi,:])]
     P_se = P_seq.sum(axis=2)
     
     P_sq = np.zeros((N_s, N_Q))
@@ -1510,14 +1471,13 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b):
     for si in range(d.N_s):
         ei = d.e[si]
         for qi in range(d.N_Q):
-            # :: DRT innermost loop has ai iterate over each bubbled-in selection
-            for ai in xrange(N_A):
+            for ai in range(N_A):
                 if b[si,qi,ai]:
                     Ai = chr2ind(d.A[ei,qi,ai])
                     Qi = d.Q[ei,qi]
                     Vi = d.V[ei,qi]
                     if ei >= 0 and Ai >= 0 and Qi >= 0 and Vi >= 0:
-                        d.n_a_QVA[Qi,Vi,Ai] += SCORE_PER_ANSWERS[sum(b[si,qi])]
+                        d.n_a_QVA[Qi,Vi,Ai] += SCORE_PER_ANSWERS[sum(b[si,qi,:])]
     write_csv(output_prefix + "_n_a_QVA.csv", ["Q", "V", "n_a(Q,V,A=%s)"], d.n_a_QVA,
               index_formats=['i', 'i', 'c'])
 
@@ -1583,7 +1543,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b):
     write_csv(output_prefix + "_R_QV.csv", ["Q", "R(Q,V=%d)"], d.R_QV)
 
     R_QV_threshold_high = 1.2
-    R_QV_threshold_low = 1./R_QV_THRESHOLD_HIGH   # was 0.8
+    R_QV_threshold_low = 1./R_QV_threshold_high
     for Qi in range(d.N_Q):
         for Vi in range(d.N_V):
             if d.n_s_QV[Qi,Vi] > 0:
@@ -1610,12 +1570,11 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b):
                     d.n_ai_ss[si,sj] += 1
     write_csv(output_prefix + "_n_ai_ss.csv", ["s1", "n_ai(s1,s2=%d)"], d.n_ai_ss)
 
-    # :: DRT modified test to use "all" against the bubble matrix
     d.r_ai_ss = np.zeros((d.N_s, d.N_s))
     for si in range(d.N_s):
         for sj in range(d.N_s):
             for qi in range(d.N_Q):
-                if d.P_sq[si,qi] == 0 and d.P_sq[sj,qi] == 0 and all(d.b[si,qi] == d.b[sj,qi]):
+                if d.P_sq[si,qi] == 0 and d.P_sq[sj,qi] == 0 and all(d.b[si,qi,:] == d.b[sj,qi,:]):
                     d.r_ai_ss[si,sj] += 1
     d.r_ai_ss /= np.where(d.n_ai_ss > 0, d.n_ai_ss, 1)
     write_csv(output_prefix + "_r_ai_ss.csv", ["s1", "r_ai(s1,s2=%d)"], d.r_ai_ss)
@@ -2056,9 +2015,9 @@ def write_statistics(output_filename, test_name, d):
         out_f.write(r"\vspace{1em}" + "\n")
         out_f.write("\n")
         out_f.write(r"The following plot shows the relative points for the question" + "\n")
-        out_f.write(r"variants. Variants with $R_{\rm QV}(Q,V)$ above 100\% are harder than" + "\n")
-        out_f.write(r"average, while values below 100\% indicate an easier-than-average" + "\n")
-        out_f.write(r"variant." + "\n")
+        out_f.write(r"variants. Variants with $R_{\rm QV}(Q,V)$ above 100\% are easier than" + "\n")
+        out_f.write(r"average (more points awarded), while values below 100\% indicate" + "\n")
+        out_f.write(r"a harder-than-average variant." + "\n")
         out_f.write("\n")
         out_f.write(r"\vspace{2em}" + "\n")
         out_f.write("\n")
@@ -2115,8 +2074,6 @@ def write_summary_statistics(output_filename, test_name, d):
 ######################################################################
 ######################################################################
 
-# :: DRT
-# modified to handle the multiple bubbling of answers
 def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, b, e, P_sq, P_s, c):
     log_and_print("Writing feedback directory: %s" % output_directory)
     if not os.path.exists(output_directory):
@@ -2160,13 +2117,10 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, b, e,
             out_f.write(r"\begin{center}" + "\n")
             out_f.write(r"\begin{tabular}{|c|c|c|c|}\hline" + "\n")
             out_f.write(r"Question  & Correct Answer & Your Answer & Points\\\hline" + "\n")
-            # :: DRT modified to handle bubble array
-            # b[si,qi,:] = 0 if not filled, 1 if filled; c[ei,qi] is the correct answer
-            # but as a character... so chr2ind to get an index out of it
             for qi in range(N_Q):
                 answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
                 out_f.write(r"%d & %s & {\color{%s} %s} & %.3g\\\hline"
-                            % ((qi + 1), c[ei,qi], answer_color, bubble2string(b[si,qi]), P_sq[si,qi]) + "\n")
+                            % ((qi + 1), c[ei,qi], answer_color, bubble2string(b[si,qi,:]), P_sq[si,qi]) + "\n")
             out_f.write(r"\hline{\bf Total} &&& %.3g\\\hline" % P_s[si])
             out_f.write(r"\end{tabular}" + "\n")
             out_f.write(r"\end{center}" + "\n")
@@ -2197,10 +2151,6 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, b, e,
                                 out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
                                 out_f.write(variant.answers[Ai].body + "\n")
                         out_f.write(r"\end{enumerate}" + "\n")
-                        # :: DRT modified to handle bubble array
-                        # b[si,qi,:] = 0 if not filled, 1 if filled; c[ei,qi] is the
-                        # correct answer but as a character... so chr2ind to get an
-                        # index out of it
                         answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
                         out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
                                     % (c[ei,qi], answer_color, bubble2string(b[si,qi])))
@@ -2234,8 +2184,6 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, b, e,
 
     log("Successfully completed writing feedback files")
 
-# :: DRT
-# explicitely add msg_txt, and rawscan_directory for an additional attachment
 def send_email(input_directory, rawscan_directory, mail_server, mail_domain, subject_line, msg_txt, u):
     log_and_print("Sending feedback emails from directory: %s" % input_directory)
     if rawscan_directory != "":

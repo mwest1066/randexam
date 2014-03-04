@@ -1,7 +1,21 @@
 
 1.9.0 - XXXX-XX-XX
 
-  * Fix description of relative points plot in `stats.pdf`.
+  * Fix description of relative points plot in `stats.pdf`
+    (Matt West).
+
+  * Add `MULTIPLE_ANSWERS_PER_QUESTION` option to handle
+    partial credit for multiple answers (Dallas Trinkle).
+
+  * Add `RAWSCAN_DIRECTORY` option to allow inclusion of
+    scantron image PDFs with exam feedback emails
+    (Dallas Trinkle).
+
+  * Add `MAIL_MSG_TEXT` and `MAIL_SIGNATURE_FILENAME` options
+    to configure feedback emails (Dallas Trinkle).
+
+  * Add the `preproc.py` script to preprocess tex files with
+    `\input` commands (Dallas Trinkle).
 
 1.8.0 - 2013-11-09
 
