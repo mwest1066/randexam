@@ -2248,7 +2248,7 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, sub
 
         with open(input_filename, "rb") as in_f:
             pdf_data = in_f.read()
-            msg = email.mime.application.MIMEApplication(in_f.read(), _subtype="pdf")
+            msg = email.mime.application.MIMEApplication("", _subtype="pdf")
             msg.set_payload(pdf_data)
             msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
             email.encoders.encode_base64(msg)
@@ -2257,7 +2257,7 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, sub
         if rawscan_directory != "":
             with open(rawscan_filename, "rb") as in_f:
                 pdf_data = in_f.read()
-                msg = email.mime.application.MIMEApplication(in_f.read(), _subtype="pdf")
+                msg = email.mime.application.MIMEApplication("", _subtype="pdf")
                 msg.set_payload(pdf_data)
                 msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
                 email.encoders.encode_base64(msg)
