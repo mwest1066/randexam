@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage{syntax}
 \usepackage{dirtree}
+\usepackage{longtable}
 
 \begin{document}
 
@@ -31,7 +32,7 @@ library. The answer order for each exam question is also a random
 permutation of the original answer order, so $A(e,q,a)$ is the library
 answer corresponding to exam answer $a$.
 
-We use capital letters for variables for quantities within the library
+We use capital-letter variables for quantities within the library
 and small letters for quantities within the randomly generated exams
 and students. Exams, questions, variants, and students are all
 numbered with Arabic numerals starting from 1. Answers are numbered
@@ -491,10 +492,10 @@ larger than the number of questions $N_{\rm Q}$.
 As well as computing the scores for each student, we can assess how
 the students as a group performed on the different questions and
 variants. Basic statistics for this assessment are listed below.
-\begin{center}
-  \begin{tabular}{llp{9cm}}
+  \begin{longtable}[c]{llp{9cm}}
     array & dimensions & description \\
     \hline
+    \endhead
     $n^{\rm s}_{\rm e}(e)$ & $N_{\rm e}$
     & number of students taking exam $e$ \\
     $n^{\rm s}_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
@@ -543,8 +544,7 @@ variants. Basic statistics for this assessment are listed below.
     & ``difficulty'' of question $Q$ (one minus normalized averaged points $\hat{P}_{\rm Q}(Q)$) \\
     $r^{\rm P}_{\rm Q}(Q)$ & $N_{\rm Q}$
     & ``discrimination'' of question $Q$ (correlation coefficient of $P_{\rm s}(s)$ and $P_{\rm sQ}(s,Q)$)
-  \end{tabular}
-\end{center}
+  \end{longtable}
 These quantities are computed by:
 \begin{align}
   n^{\rm s}_{\rm e}(e) &= \sum_{s = 1}^{N_{\rm s}} \delta\big(K(e), k(s)\big) \displaybreak[0] \\
