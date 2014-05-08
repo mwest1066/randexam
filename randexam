@@ -403,6 +403,7 @@ def read_library(input_filename):
         LibraryRegexp(name="end_answers", regexp=r"^\s*\\end\{answers\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="end_solution", regexp=r"^\s*\\end\{solution\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="end_document", regexp=r"^\s*\\end\{document\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="comment", regexp=r"^\s*%.*$"),
         LibraryRegexp(name="text", regexp=r"^.*\S.*$"),
         LibraryRegexp(name="blank", regexp=r"^\s*$"),
         ]
@@ -416,10 +417,6 @@ def read_library(input_filename):
         line = line.strip()
         file_log("read line: \"%s\"" % line)
             
-        match_comment = re.search(r"(?<!\\)%", line)
-        if match_comment:
-            line = line[:match_comment.start()]
-            file_log("stripped comments: \"%s\"" % line)
         match_name = None
         match = None
         for library_regexp in library_regexps:
@@ -428,7 +425,7 @@ def read_library(input_filename):
                 match_name = library_regexp.name
                 if library_regexp.no_tail:
                     extra_text = match.group("tail").strip()
-                    if len(extra_text) > 0:
+                    if len(extra_text) > 0 and extra_text[0] != "%":
                         file_die("invalid extra text following '%s': %s" % (match_name, extra_text))
                 break
         else:
@@ -501,16 +498,19 @@ def read_library(input_filename):
 
         if state.name == "preamble":
             if match_name == "begin_document":   transition("coverpage")
+            elif match_name == "comment":        file_log("skipping comment line")
             elif match_name == "text":           append_to_preamble()
             elif match_name == "blank":          append_to_preamble()
             else: bad_transition()
         elif state.name == "coverpage":
             if match_name == "text":             append_to_coverpage()
+            elif match_name == "comment":        file_log("skipping comment line")
             elif match_name == "blank":          append_to_coverpage()
             elif match_name == "zone":           transition("zone"); new_zone()
             else: bad_transition()
         elif state.name == "zone":
-            if match_name == "text":             append_to_zone_body()
+            if match_name == "comment":          file_log("skipping comment line")
+            elif match_name == "text":           append_to_zone_body()
             elif match_name == "blank":          append_to_zone_body()
             elif match_name == "question":       transition("question"); new_question()
             elif match_name == "zone":           transition("zone"); new_zone()
@@ -521,10 +521,12 @@ def read_library(input_filename):
             elif match_name == "question":       transition("question"); new_question()
             elif match_name == "zone":           transition("zone"); new_zone()
             elif match_name == "end_document":   file_log("stopping file reading"); break
+            elif match_name == "comment":        file_log("skipping comment line")
             elif match_name == "blank":          file_log("skipping blank line")
             else: bad_transition()
         elif state.name == "variant":
-            if match_name == "text":             append_to_variant_body()
+            if match_name == "comment":          append_to_variant_body()
+            elif match_name == "text":           append_to_variant_body()
             elif match_name == "blank":          append_to_variant_body()
             elif match_name == "begin_answers":  transition("answers")
             elif match_name == "begin_solution": transition("solution")
@@ -532,10 +534,12 @@ def read_library(input_filename):
         elif state.name == "answers":
             if match_name == "correct_answer":   transition("answer"); new_answer(correct=True)
             elif match_name == "answer":         transition("answer"); new_answer(correct=False)
+            elif match_name == "comment":        file_log("skipping comment line")
             elif match_name == "blank":          file_log("skipping blank line")
             else: bad_transition()
         elif state.name == "answer":
-            if match_name == "text":             append_to_answer_body()
+            if match_name == "comment":          append_to_answer_body()
+            elif match_name == "text":           append_to_answer_body()
             elif match_name == "blank":          append_to_answer_body()
             elif match_name == "correct_answer": transition("answer"); new_answer(correct=True)
             elif match_name == "answer":         transition("answer"); new_answer(correct=False)
