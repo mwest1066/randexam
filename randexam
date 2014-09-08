@@ -414,7 +414,6 @@ def read_library(input_filename):
             log("%s:%d: %s" % (input_filename, i_line + 1, msg))
         def file_die(msg):
             die("%s:%d: ERROR: %s" % (input_filename, i_line + 1, msg))
-        line = line.strip()
         file_log("read line: \"%s\"" % line)
             
         match_name = None
@@ -467,33 +466,21 @@ def read_library(input_filename):
             state.answer.correct = correct
         def append_to_preamble():
             file_log("appending line to preamble")
-            if len(library.preamble) > 0:
-                library.preamble += "\n"
             library.preamble += line
         def append_to_coverpage():
             file_log("appending line to coverpage")
-            if len(library.coverpage) > 0:
-                library.coverpage += "\n"
             library.coverpage += line
         def append_to_zone_body():
             file_log("appending line to zone body")
-            if len(state.zone.body) > 0:
-                state.zone.body += "\n"
             state.zone.body += line
         def append_to_variant_body():
             file_log("appending line to variant body")
-            if len(state.variant.body) > 0:
-                state.variant.body += "\n"
             state.variant.body += line
         def append_to_answer_body():
             file_log("appending line to answer body")
-            if len(state.answer.body) > 0:
-                state.answer.body += "\n"
             state.answer.body += line
         def append_to_solution_body():
             file_log("appending line to solution body")
-            if len(state.variant.solution) > 0:
-                state.variant.solution += "\n"
             state.variant.solution += line
 
         if state.name == "preamble":
@@ -589,6 +576,9 @@ def check_library(library):
                 if len(variant.answers) == 1:
                     errors.append("question %d, variant %d (line %d): only 1 answer"
                                   % (Qi + 1, i_variant + 1, variant.line_number))
+                if len(variant.answers) > N_A:
+                    errors.append("question %d, variant %d (line %d): has %d answers, which is more than N_A = %d (maybe increase N_A?)"
+                                  % (Qi + 1, i_variant + 1, variant.line_number, len(variant.answers), N_A))
                 correct_answer_indexes = []
                 for (i_answer, answer) in enumerate(variant.answers):
                     if len(answer.body) == 0:
