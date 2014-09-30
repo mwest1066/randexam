@@ -442,6 +442,8 @@ def read_library(input_filename):
             library.zones.append(state.zone)
             state.zone.line_number = i_line + 1
             state.zone.body = match.group("tail").strip()
+            if len(state.zone.body) > 0:
+                state.zone.body += "\n";
         def new_question():
             file_log("starting new question")
             state.question = Question()
@@ -457,12 +459,16 @@ def read_library(input_filename):
             state.question.variants.append(state.variant)
             state.variant.line_number = i_line + 1
             state.variant.body = match.group("tail").strip()
+            if len(state.variant.body) > 0:
+                state.variant.body += "\n";
         def new_answer(correct):
             file_log("starting new answer")
             state.answer = Answer()
             state.variant.answers.append(state.answer)
             state.answer.line_number = i_line + 1
             state.answer.body = match.group("tail").strip()
+            if len(state.answer.body) > 0:
+                state.answer.body += "\n";
             state.answer.correct = correct
         def append_to_preamble():
             file_log("appending line to preamble")
@@ -485,18 +491,18 @@ def read_library(input_filename):
 
         if state.name == "preamble":
             if match_name == "begin_document":   transition("coverpage")
-            elif match_name == "comment":        file_log("skipping comment line")
+            elif match_name == "comment":        append_to_preamble()
             elif match_name == "text":           append_to_preamble()
             elif match_name == "blank":          append_to_preamble()
             else: bad_transition()
         elif state.name == "coverpage":
             if match_name == "text":             append_to_coverpage()
-            elif match_name == "comment":        file_log("skipping comment line")
+            elif match_name == "comment":        append_to_coverpage()
             elif match_name == "blank":          append_to_coverpage()
             elif match_name == "zone":           transition("zone"); new_zone()
             else: bad_transition()
         elif state.name == "zone":
-            if match_name == "comment":          file_log("skipping comment line")
+            if match_name == "comment":          append_to_zone_body()
             elif match_name == "text":           append_to_zone_body()
             elif match_name == "blank":          append_to_zone_body()
             elif match_name == "question":       transition("question"); new_question()
@@ -533,11 +539,13 @@ def read_library(input_filename):
             elif match_name == "end_answers":    transition("presolution")
             else: bad_transition()
         elif state.name == "presolution":
-            if match_name == "blank":            pass
+            if match_name == "comment":          file_log("skipping comment line")
+            elif match_name == "blank":          file_log("skipping blank line")
             elif match_name == "begin_solution": transition("solution")
             else: bad_transition()
         elif state.name == "solution":
-            if match_name == "text":             append_to_solution_body()
+            if match_name == "comment":          append_to_solution_body()
+            elif match_name == "text":           append_to_solution_body()
             elif match_name == "blank":          append_to_solution_body()
             elif match_name == "end_solution":   transition("question")
             else: bad_transition()
