@@ -33,6 +33,8 @@ CHECK_REPEATED_EXAM_KEYS = True # whether to check if multiple students used the
 # email information
 MAIL_SERVER = "smtp.illinois.edu"
 MAIL_DOMAIN = "illinois.edu"
+MAIL_MAX_SEND_RATE = 1.0 # maximum number of emails per second to send
+MAIL_MAX_ATTEMPTS = 3 # maximum number of sending attempts per email
 MAIL_SIGNATURE_FILENAME = os.path.expanduser("~/.signature") # set to "" to disable signature searching
 MAIL_MSG_TXT = """
 The attached file contains a summary of your recent test results.
@@ -160,7 +162,8 @@ def main():
             log_and_print("No signature file found, filename: " + MAIL_SIGNATURE_FILENAME)
         log("Email message text:")
         log(MAIL_MSG_TXT)
-        send_email(FEEDBACK_DIRECTORY, RAWSCAN_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN, TEST_NAME, MAIL_MSG_TXT, u)
+        send_email(FEEDBACK_DIRECTORY, RAWSCAN_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN,
+                   MAIL_MAX_SEND_RATE, MAIL_MAX_ATTEMPTS, TEST_NAME, MAIL_MSG_TXT, u)
     elif sys.argv[1] == "proc-curve":
         init_logging(LOG_PROC_CURVE_FILENAME)
         print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
@@ -1288,9 +1291,11 @@ def keys_to_exams(K, k, u):
                     best_matches.append(K[ei])
             if len(best_matches) == 1:
                 best_string = "best match is %s (Hamming distance %d)" % (best_matches[0], min_d)
-            else:
+            elif len(best_matches) <= 5:
                 best_string = "best matches are %s (all at Hamming distance %d)" \
                     % (",".join(best_matches), min_d)
+            else:
+                best_string = "too many equivalently best matches to display"
             log_and_print("WARNING: key '%s' for student %s/%s/%s/%s not found: %s"
                               % (k[si], u[si,0], u[si,1], u[si,2], u[si,3], best_string))
     log_array(e, "e", ["N_s"])
@@ -2186,15 +2191,12 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, b, e,
 
     log("Successfully completed writing feedback files")
 
-def send_email(input_directory, rawscan_directory, mail_server, mail_domain, subject_line, msg_txt, u):
+def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max_send_rate, max_attempts, subject_line, msg_txt, u):
     log_and_print("Sending feedback emails from directory: %s" % input_directory)
     if rawscan_directory != "":
         log_and_print("Including rawscan PDFs from directory: %s" % rawscan_directory)
 
     N_s = u.shape[0]
-
-    block_size = 50 # number of emails to send per connect session
-    min_block_send_time = 60 # seconds
 
     print("WARNING: email sending will only work correctly from within the %s domain" % mail_domain)
     sending_netid = raw_input("NetID of sending user: ")
@@ -2203,70 +2205,96 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, sub
 
     log_and_print("Sending mail from: %s" % from_address)
     log_and_print("Subject line: %s" % subject_line)
+    log_and_print("Limiting send rate to %f emails per second" % max_send_rate)
 
-    index_in_block = 0
+    smtp = None
 
     for si in range(N_s):
-        if index_in_block >= block_size:
-            index_in_block = 0
-            log_and_print("Quitting current connection")
-            smtp.quit()
-            log_and_print("Sleeping for 60 seconds")
-            time.sleep(min_block_send_time)
-
-        if index_in_block == 0:
-            log_and_print("Creating new SMTP object")
-            smtp = smtplib.SMTP()
-            # uncomment line below to enable verbose debugging info
-            #smtp.set_debuglevel(True)
-            log_and_print("Connecting to mail server: %s" % mail_server)
-            smtp.connect(mail_server, 587)
-            smtp.starttls()
-            smtp.ehlo_or_helo_if_needed()
-            smtp.login(sending_netid, sending_password)
-        index_in_block += 1
-
         student_netid = u[si,3].lower()
         to_address = student_netid + "@" + mail_domain
-        input_basename = student_netid + ".pdf"
-        input_filename = os.path.join(input_directory, input_basename)
-        if rawscan_directory != "":
-            rawscan_filename = os.path.join(rawscan_directory, input_basename)
+        sent_tag_basename = student_netid + ".email_sent"
+        sent_tag_filename = os.path.join(input_directory, sent_tag_basename)
 
-        log_and_print("%d/%d: emailing feedback to %s" % (si + 1, u.shape[0], to_address))
+        for attempt in range(max_attempts):
+            log_and_print("%d/%d (attempt %d/%d): emailing feedback to %s"
+                          % (si + 1, u.shape[0], attempt, max_attempts, to_address))
+            success = True
+            if os.path.exists(sent_tag_filename):
+                log_and_print("File %s exists, skipping" % sent_tag_filename)
+                break
+            try:
+                if smtp == None:
+                    log_and_print("Creating new SMTP object")
+                    smtp = smtplib.SMTP()
+                    # uncomment line below to enable verbose debugging info
+                    #smtp.set_debuglevel(True)
+                    log_and_print("Connecting to mail server: %s" % mail_server)
+                    smtp.connect(mail_server, 587)
+                    smtp.starttls()
+                    smtp.ehlo_or_helo_if_needed()
+                    smtp.login(sending_netid, sending_password)
 
-        outer = email.mime.multipart.MIMEMultipart()
-        outer['Subject'] = subject_line
-        outer['To'] = to_address
-        outer['From'] = from_address
+                input_basename = student_netid + ".pdf"
+                input_filename = os.path.join(input_directory, input_basename)
+                if rawscan_directory != "":
+                    rawscan_filename = os.path.join(rawscan_directory, input_basename)
 
-        if not os.path.isfile(input_filename):
-            log_and_print("ERROR: unable to find file: %s" % input_filename)
-        if rawscan_directory != "" and not os.path.isfile(rawscan_filename):
-            log_and_print("ERROR: unable to find file: %s" % rawscan_filename)
+                outer = email.mime.multipart.MIMEMultipart()
+                outer['Subject'] = subject_line
+                outer['To'] = to_address
+                outer['From'] = from_address
 
-        msg = email.mime.text.MIMEText(msg_txt)
-        outer.attach(msg)
+                if not os.path.isfile(input_filename):
+                    log_and_print("ERROR: unable to find file: %s" % input_filename)
+                    raise Exception("input file not found")
+                if rawscan_directory != "" and not os.path.isfile(rawscan_filename):
+                    log_and_print("ERROR: unable to find file: %s" % rawscan_filename)
+                    raise Exception("rawscan file not found")
 
-        with open(input_filename, "rb") as in_f:
-            pdf_data = in_f.read()
-            msg = email.mime.application.MIMEApplication("", _subtype="pdf")
-            msg.set_payload(pdf_data)
-            msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
-            email.encoders.encode_base64(msg)
-            outer.attach(msg)
-
-        if rawscan_directory != "":
-            with open(rawscan_filename, "rb") as in_f:
-                pdf_data = in_f.read()
-                msg = email.mime.application.MIMEApplication("", _subtype="pdf")
-                msg.set_payload(pdf_data)
-                msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
-                email.encoders.encode_base64(msg)
+                msg = email.mime.text.MIMEText(msg_txt)
                 outer.attach(msg)
 
-        composed = outer.as_string()
-        smtp.sendmail(from_address, to_address, composed)
+                with open(input_filename, "rb") as in_f:
+                    pdf_data = in_f.read()
+                    msg = email.mime.application.MIMEApplication("", _subtype="pdf")
+                    msg.set_payload(pdf_data)
+                    msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
+                    email.encoders.encode_base64(msg)
+                    outer.attach(msg)
+
+                if rawscan_directory != "":
+                    with open(rawscan_filename, "rb") as in_f:
+                        pdf_data = in_f.read()
+                        msg = email.mime.application.MIMEApplication("", _subtype="pdf")
+                        msg.set_payload(pdf_data)
+                        msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
+                        email.encoders.encode_base64(msg)
+                        outer.attach(msg)
+
+                composed = outer.as_string()
+                start_time = time.clock()
+                #smtp.sendmail(from_address, to_address, composed)
+                end_time = time.clock()
+                elapsed_time = end_time - start_time
+                if elapsed_time < 1.0 / max_send_rate:
+                    time.sleep(1.0 / max_send_rate - elapsed_time)
+
+            except Exception as e:
+                success = False
+                log_and_print("ERROR: sending failed to %s: %s" % (to_address, str(e)))
+                log_and_print("Closing current SMTP connection")
+                try:
+                    stmp.quit()
+                except:
+                    pass
+                smtp = None
+            if success:
+                log_and_print("Successfully sent to %s, touching file %s" % (to_address, sent_tag_filename))
+                with open(sent_tag_filename, "w") as touch_f:
+                    pass
+                break
+        else:
+            log_and_print("ERROR: to many attempts for %s, giving up" % to_address)
 
     log("Successfully completed sending email")
 
