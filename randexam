@@ -148,8 +148,11 @@ def main():
         print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         (K, Q, V, A) = read_specs(SPECS_FILENAME)
         (u, k, b) = read_answers(ANSWERS_FILENAME)
+        library = read_library(LIBRARY_FILENAME)
+        (P, C) = extract_points(library, N_A)
+        c = generate_solutions(Q, V, A, C)
         P = read_points(POINTS_FILENAME)
-        d = generate_scores_and_statistics(RAW_STATS_PREFIX, P, K, Q, V, A, u, k, b)
+        d = generate_scores_and_statistics(RAW_STATS_PREFIX, P, K, Q, V, A, u, k, b, c)
         write_scores(SCORES_FILENAME, u, d.P_s)
         write_gradebook(GRADEBOOK_FILENAME, u, d.P_s)
         write_statistics(STATS_FILENAME, TEST_NAME, d)
@@ -1441,8 +1444,8 @@ def write_halfviz(output_filename, data, threshold):
                     out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
     log("Successfully completed writing graph file")
 
-def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b):
-    """d = generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b)
+def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c):
+    """d = generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c)
 
     d is a structure containing all data arrays and all generated
     statistics arrays.
@@ -1465,6 +1468,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b):
     d.u = u
     d.k = k
     d.b = b
+    d.c = c
     (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
 
     write_csv(output_prefix + "_P_seq.csv", ["s", "e", "P_seq(s,e,q=%d)"], d.P_seq)
@@ -1664,6 +1668,36 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b):
         for Qi in range(d.N_Q):
             d.Phat_gQ[gi,Qi] = d.Pbar_gQ[gi,Qi] / max(1, d.P_max_Q[Qi])
     write_csv(output_prefix + "_Phat_gQ.csv", ["g", "Phat(g,Q=%d)"], d.Phat_gQ)
+
+    d.q_sQ = np.zeros((d.N_s, d.N_Q), dtype=int)
+    for si in range(d.N_s):
+        ei = d.e[si]
+        if ei >= 0:
+            for qi in range(d.N_Q):
+                Qi = d.Q[ei,qi]
+                if Qi >= 0:
+                    d.q_sQ[si,Qi] = qi + 1
+    write_csv(output_prefix + "_q_sQ.csv", ["s", "q(s,Q=%d)"], d.q_sQ)
+    
+    d.V_sQ = np.zeros((d.N_s, d.N_Q), dtype=int)
+    for si in range(d.N_s):
+        ei = d.e[si]
+        if ei >= 0:
+            for Qi in range(d.N_Q):
+                qi = d.q_sQ[si,Qi] - 1
+                if qi >= 0:
+                    d.V_sQ[si,Qi] = d.V[ei,qi] + 1
+    write_csv(output_prefix + "_V_sQ.csv", ["s", "V(s,Q=%d)"], d.V_sQ)
+
+    d.c_sQ = np.zeros((d.N_s, d.N_Q), dtype=int)
+    for si in range(d.N_s):
+        ei = d.e[si]
+        if ei >= 0:
+            for Qi in range(d.N_Q):
+                qi = d.q_sQ[si,Qi] - 1
+                if qi >= 0:
+                    d.c_sQ[si,Qi] = chr2ind(d.c[ei,qi]) + 1
+    write_csv(output_prefix + "_c_sQ.csv", ["s", "c(s,Q=%d)"], d.c_sQ)
 
     log("Successfully completed generating scores and statistics")
     return d
