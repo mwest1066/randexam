@@ -2273,7 +2273,7 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max
 
                 composed = outer.as_string()
                 start_time = time.clock()
-                #smtp.sendmail(from_address, to_address, composed)
+                smtp.sendmail(from_address, to_address, composed)
                 end_time = time.clock()
                 elapsed_time = end_time - start_time
                 if elapsed_time < 1.0 / max_send_rate:
@@ -2288,6 +2288,9 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max
                 except:
                     pass
                 smtp = None
+                delay_time = 5
+                log_and_print("Pausing for %d seconds" % delay_time)
+                time.sleep(delay_time)
             if success:
                 log_and_print("Successfully sent to %s, touching file %s" % (to_address, sent_tag_filename))
                 with open(sent_tag_filename, "w") as touch_f:
