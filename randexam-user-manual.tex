@@ -1,0 +1,65 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{syntax}
+\usepackage{dirtree}
+\usepackage{longtable}
+
+\begin{document}
+
+\title{\texttt{randexam}: Randomized Exam Generation and Grading\\[1em] User Manual\\[1em] \Large Version 1.9.0}
+\date{\vspace*{-2em}2014-03-04}
+\maketitle
+
+\section{Recommended procedures}
+
+To prepare a ``Final'' exam, we assume that we are working within a
+\texttt{exam_final} directory.
+
+\subsection{Preparing the exams}
+
+\begin{itemize}
+\item Make a directory called \texttt{1_exams} and copy in
+  \texttt{randexam} and \texttt{library.tex}.
+\item Rename \texttt{library.tex} to \texttt{final_library.tex} and
+  set the \texttt{PREFIX} in \texttt{randexam} to \texttt{final_}.
+\item Edit \texttt{final_library.tex} to add questions and make the
+  coversheet.
+\item Run \texttt{./randexam proc-lib}.
+\item Run \texttt{pdflatex final_exams.tex}, and look at the output
+  near the end for information about exam lengths.
+\item Adjust \texttt{MINIMUM_EXAM_PAGES} in \texttt{randexam} to be
+  the smallest even number that is at least as large as the maximum
+  raw length.
+\end{itemize}
+
+\subsection{Administering the exams}
+
+\begin{itemize}
+\item Collect both the Scantron sheets and the exam papers (with names
+  on them) from the students, so that exam papers can be later matched
+  to students if needed.
+\end{itemize}
+
+\subsection{Grading the exams}
+
+\begin{itemize}
+\item Make a subdirectory called \texttt{2_scantrons} containing a raw
+  unedited copy of the Scantron data files.
+\item Make a subdirectory called \texttt{3_grading} and copy in the
+  contents of both \texttt{1_exams} and \texttt{2_scantrons}. All
+  editing should be done in this third directory.
+\item Run \texttt{./randexam proc-scan} and clean up errors in the
+  file as needed.
+\item Run \texttt{./randexam proc-ans}.
+\item If desired, run \texttt{./randexam proc-curve} and adjust the
+  \texttt{curve_scores()} function in \texttt{randexam} as desired.
+\item Upload \texttt{gradebook.csv} to record the total scores.
+\item Run \texttt{./randexam proc-feedback}.
+\item If desired, create a \verb+rawscan+ directory with PDFs of
+  individual Scantron sheets to be included in email feedback.
+\item Run \texttt{./randexam proc-email}.
+\end{itemize}
+
+\end{document}

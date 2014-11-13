@@ -1,5 +1,5 @@
 
-1.9.1 - XXXX-XX-XX
+1.10.0 - XXXX-XX-XX
 
   * Fix comment-stripping bug within questions.
 
@@ -8,6 +8,9 @@
   * Preserve linebreaks in library text.
 
   * Improve robustness of feedback email sending.
+
+  * Separate out manuals into `randexam-user-manual` and
+    `randexam-dev-manual`.
 
 1.9.0 - 2014-03-04
 
