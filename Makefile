@@ -6,23 +6,25 @@ RELEASE_NAME = randexam-$(VERSION)
 RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam-user-manual.tex randexam-user-manual.pdf randexam-dev-manual.tex randexam-dev-manual.pdf library.tex scantron.dat netids.txt pipeline.gv statemachine.gv
 
 .PHONY: all release
-all: randexam.pdf
+all: randexam-user-manual.pdf randexam-dev-manual.pdf
 release: $(RELEASE_NAME).tar.gz
 
-$(RELEASE_NAME).tar.gz: randexam.pdf
+$(RELEASE_NAME).tar.gz: randexam-user-manual.pdf randexam-dev-manual.pdf
 	grep -q $(VERSION) randexam
 	grep -q $(VERSION) README.md
 	grep -q $(VERSION) ChangeLog
-	grep -q $(VERSION) randexam.tex
+	grep -q $(VERSION) randexam-user-manual.tex
+	grep -q $(VERSION) randexam-dev-manual.tex
 	grep -q $(RELEASE_DATE) randexam
 	grep -q $(RELEASE_DATE) README.md
 	grep -q $(RELEASE_DATE) ChangeLog
-	grep -q $(RELEASE_DATE) randexam.tex
+	grep -q $(RELEASE_DATE) randexam-user-manual.tex
+	grep -q $(RELEASE_DATE) randexam-dev-manual.tex
 	mkdir $(RELEASE_NAME)
 	cp $(RELEASE_FILES) $(RELEASE_NAME)
 	tar czf $@ $(RELEASE_NAME)
 
-randexam.pdf: pipeline.pdf statemachine.pdf
+randexam-dev-manual.pdf: pipeline.pdf statemachine.pdf
 
 %.pdf: %.tex
 	pdflatex $<
