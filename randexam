@@ -34,7 +34,9 @@ CHECK_REPEATED_EXAM_KEYS = True # whether to check if multiple students used the
 MAIL_SERVER = "smtp.illinois.edu"
 MAIL_DOMAIN = "illinois.edu"
 MAIL_MAX_SEND_RATE = 1.0 # maximum number of emails per second to send
-MAIL_MAX_ATTEMPTS = 3 # maximum number of sending attempts per email
+MAIL_MAX_ATTEMPTS = 5 # maximum number of sending attempts per email
+MAIL_TIMEOUT = 120 # timeout for all email operations (seconds)
+MAIL_RETRY_DELAY = 30 # delay before email fail retries (seconds)
 MAIL_SIGNATURE_FILENAME = os.path.expanduser("~/.signature") # set to "" to disable signature searching
 MAIL_MSG_TXT = """
 The attached file contains a summary of your recent test results.
@@ -163,7 +165,8 @@ def main():
         log("Email message text:")
         log(MAIL_MSG_TXT)
         send_email(FEEDBACK_DIRECTORY, RAWSCAN_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN,
-                   MAIL_MAX_SEND_RATE, MAIL_MAX_ATTEMPTS, TEST_NAME, MAIL_MSG_TXT, u)
+                   MAIL_MAX_SEND_RATE, MAIL_MAX_ATTEMPTS, MAIL_TIMEOUT, MAIL_RETRY_DELAY,
+                   TEST_NAME, MAIL_MSG_TXT, u)
     elif sys.argv[1] == "proc-curve":
         init_logging(LOG_PROC_CURVE_FILENAME)
         print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
@@ -2191,7 +2194,7 @@ def generate_feedback(output_directory, test_name, library, Q, V, A, u, k, b, e,
 
     log("Successfully completed writing feedback files")
 
-def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max_send_rate, max_attempts, subject_line, msg_txt, u):
+def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max_send_rate, max_attempts, timeout, retry_delay, subject_line, msg_txt, u):
     log_and_print("Sending feedback emails from directory: %s" % input_directory)
     if rawscan_directory != "":
         log_and_print("Including rawscan PDFs from directory: %s" % rawscan_directory)
@@ -2217,15 +2220,15 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max
 
         for attempt in range(max_attempts):
             log_and_print("%d/%d (attempt %d/%d): emailing feedback to %s"
-                          % (si + 1, u.shape[0], attempt, max_attempts, to_address))
+                          % (si + 1, u.shape[0], attempt + 1, max_attempts, to_address))
             success = True
             if os.path.exists(sent_tag_filename):
                 log_and_print("File %s exists, skipping" % sent_tag_filename)
                 break
             try:
                 if smtp == None:
-                    log_and_print("Creating new SMTP object")
-                    smtp = smtplib.SMTP()
+                    log_and_print("Creating new SMTP object, timeout = %d seconds" % timeout)
+                    smtp = smtplib.SMTP(timeout=timeout)
                     # uncomment line below to enable verbose debugging info
                     #smtp.set_debuglevel(True)
                     log_and_print("Connecting to mail server: %s" % mail_server)
@@ -2288,9 +2291,8 @@ def send_email(input_directory, rawscan_directory, mail_server, mail_domain, max
                 except:
                     pass
                 smtp = None
-                delay_time = 5
-                log_and_print("Pausing for %d seconds" % delay_time)
-                time.sleep(delay_time)
+                log_and_print("Pausing for %d seconds" % retry_delay)
+                time.sleep(retry_delay)
             if success:
                 log_and_print("Successfully sent to %s, touching file %s" % (to_address, sent_tag_filename))
                 with open(sent_tag_filename, "w") as touch_f:
