@@ -82,6 +82,18 @@ LOG_PROC_CURVE_FILENAME = FILENAME_PREFIX + "proc_curve.log"
 
 ######################################################################
 ######################################################################
+# python 2.X versus 3.X differences
+
+if sys.version_info[0] < 3 and sys.version_info[1] < 7:
+    print("This script requires python version at least 2.7, current version is %s" % sys.version)
+    sys.exit(1)
+elif sys.version_info[0] < 3:
+    CSV_WRITER_ARGS = {"mode": "wb"}
+else:
+    CSV_WRITER_ARGS = {"mode": "w", "newline": ""}
+
+######################################################################
+######################################################################
 
 def main():
     if len(sys.argv) != 2:
@@ -663,7 +675,7 @@ def write_points(output_filename, P):
     """
     log_and_print("Writing points file: %s" % output_filename)
     (N_Q, N_V, N_A) = P.shape
-    with open(output_filename, 'w') as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         writer.writerow(["Q", "V", "A", "P(Q,V,A)"])
         for Qi in range(N_Q):
@@ -764,7 +776,7 @@ def write_specs(output_filename, K, Q, V, A):
     """
     log_and_print("Writing exam specs to file: %s" % output_filename)
     (N_e, N_Q) = Q.shape
-    with open(output_filename, 'w') as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         row = ["e", "K(e)"]
         for qi in range(N_Q):
@@ -1013,7 +1025,7 @@ def write_solutions(output_filename, K, c):
     log_and_print("Writing solutions to file: %s" % output_filename)
     (N_e, N_Q) = c.shape
 
-    with open(output_filename, "w") as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         writer.writerow(["e", "K(e)"] + ["c(e,q=%d)" % (qi + 1) for qi in range(N_Q)])
         for ei in range(N_e):
@@ -1153,7 +1165,7 @@ def write_answers(output_filename, u, k, b):
     """
     log_and_print("Writing answers to file: %s" % output_filename)
     (N_s, N_Q) = b.shape[0:2]
-    with open(output_filename, 'w') as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "k(s)"]
                         + ["b(s,q=%d,:)" % (q + 1) for q in range(N_Q)])
@@ -1390,7 +1402,7 @@ def write_csv(output_filename, headers, data, index_formats=None):
             return i + 1
         elif f == "c":
             return ind2chr(i)
-    with open(output_filename, "w") as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         if len(data.shape) == 0:
             writer.writerow(headers[0])
@@ -1667,7 +1679,7 @@ def write_scores(output_filename, u, P_s):
     log_and_print("Writing scores to file: %s" % output_filename)
     N_s = u.shape[0]
 
-    with open(output_filename, 'w') as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         writer.writerow(["s", "Name", "Initial", "Number", "NetID", "P_s(s)"])
         for si in range(N_s):
@@ -1752,7 +1764,7 @@ def write_gradebook(output_filename, u, P_s):
     log_and_print("Writing gradebook scores to file: %s" % output_filename)
     N_s = u.shape[0]
 
-    with open(output_filename, 'w') as out_f:
+    with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         for si in range(N_s):
             writer.writerow([u[si,3].lower(), "%.2f" % P_s[si]])
