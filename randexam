@@ -1254,7 +1254,7 @@ def check_repeated_exam_keys(u, k):
             key_to_uids[key] = []
         key_to_uids[key].append(netid)
     unique_keys = True
-    for (key, netids) in key_to_uids.iteritems():
+    for (key, netids) in key_to_uids.items():
         if len(netids) > 1:
             unique_keys = False
             log_and_print("WARNING: Exam key %s used by %d students: %s"
