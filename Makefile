@@ -3,7 +3,7 @@ VERSION = 1.9.0
 RELEASE_DATE = 2014-03-04
 RELEASE_NAME = randexam-$(VERSION)
 
-RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam.tex randexam.pdf library.tex scantron.dat netids.txt pipeline.gv statemachine.gv
+RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam-user-manual.tex randexam-user-manual.pdf randexam-dev-manual.tex randexam-dev-manual.pdf library.tex scantron.dat netids.txt pipeline.gv statemachine.gv
 
 .PHONY: all release
 all: randexam.pdf
@@ -38,4 +38,4 @@ randexam.pdf: pipeline.pdf statemachine.pdf
 	epstopdf $<
 
 clean:
-	rm -rf pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,scores,solutions,answers,grades,gradebook}.csv {full_solutions,exams,stats}.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz} proc_{lib,scan,ans}.log feedback
+	rm -rf pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam-user-manual.{pdf,aux,log,synctex.gz} randexam-dev-manual.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,scores,solutions,answers,grades,gradebook}.csv {full_solutions,exams,stats}.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz} proc_{lib,scan,ans}.log feedback
