@@ -40,4 +40,4 @@ randexam-dev-manual.pdf: pipeline.pdf statemachine.pdf
 	epstopdf $<
 
 clean:
-	rm -rf pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam-user-manual.{pdf,aux,log,synctex.gz} randexam-dev-manual.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,scores,solutions,answers,grades,gradebook}.csv {full_solutions,exams,stats}.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz} proc_{lib,scan,ans}.log feedback
+	rm -rf pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam-user-manual.{pdf,aux,log,synctex.gz} randexam-dev-manual.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,scores,solutions,answers,grades,gradebook}.csv {full_solutions,exams,stats}.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz} proc_{lib,scan,ans,email,feedback,curve}.log feedback
