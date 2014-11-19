@@ -6,7 +6,7 @@ RELEASE_DATE = "2014-03-04"
 import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
 import numpy as np
-import scipy.interpolate
+#import scipy.interpolate
 
 ######################################################################
 ######################################################################
@@ -1719,10 +1719,10 @@ def curve_scores(P_s):
 
     old_data = np.array([old_min, old_mean, old_max])
     new_data = np.array([new_min, new_mean, new_max])
-    interp = scipy.interpolate.pchip(old_data, new_data)
-    interp = scipy.interpolate.InterpolatedUnivariateSpline(old_data, new_data, k=2)
-    interp = scipy.interpolate.InterpolatedUnivariateSpline([0,  20, 40, 60, 80],
-                                                            [50, 70, 83, 95, 100])
+    #interp = scipy.interpolate.pchip(old_data, new_data)
+    #interp = scipy.interpolate.InterpolatedUnivariateSpline(old_data, new_data, k=2)
+    #interp = scipy.interpolate.InterpolatedUnivariateSpline([0,  20, 40, 60, 80],
+    #                                                        [50, 70, 83, 95, 100])
 
     for i in range(N_s):
         #P_curve_s[i] = interp(P_s[i])
