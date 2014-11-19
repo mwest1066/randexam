@@ -1178,7 +1178,7 @@ def read_answers(input_filename):
                 continue # skip header
             if len(row) < 6:
                 die("%s:%d: ERROR: expected at least 6 items in row, got %d"
-                    (input_filename, i_row + 1, len(row)))
+                    % (input_filename, i_row + 1, len(row)))
             u_data.append(row[1:5])
             k_data.append(row[5])
             b_data.append([string2bubble(s) for s in row[6:] ])
@@ -1689,7 +1689,7 @@ def read_scores(output_filename):
                 continue # skip header
             if len(row) < 6:
                 die("%s:%d: ERROR: expected at least 6 items in row, got %d"
-                    (input_filename, i_row + 1, len(row)))
+                    % (input_filename, i_row + 1, len(row)))
             u_data.append(row[1:5])
             P_s_data.append(row[5])
     u = np.array(u_data, dtype=object)
