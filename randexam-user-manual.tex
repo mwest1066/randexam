@@ -5,6 +5,7 @@
 \usepackage{syntax}
 \usepackage{dirtree}
 \usepackage{longtable}
+\usepackage{hyperref}
 
 \begin{document}
 
@@ -12,54 +13,285 @@
 \date{\vspace*{-2em}2014-11-19}
 \maketitle
 
-\section{Recommended procedures}
+\section{Overview}
 
-To prepare a ``Final'' exam, we assume that we are working within a
-\texttt{exam_final} directory.
+The \texttt{randexam} program allows the generation of
+individually-randomized exams for every student. The process starts
+with a \emph{library} latex file that contains a sequence of
+\emph{zones}. Each zone contains a sequence of \emph{questions}, and
+each question contains one or more \emph{variants}. If the question is
+a multiple-choice question, then each variant has a set of
+\emph{answers}, exactly one of which is the \emph{correct answer}.
 
-\subsection{Preparing the exams}
+Each randomized exam has the same set of zones as the library, and in
+the same order. Within each zone, the order of questions is
+randomized. For each question, one of the variants is selected at
+random, and the order of the answers is also randomized.
 
-\begin{itemize}
-\item Make a directory called \texttt{1_exams} and copy in
-  \texttt{randexam} and \texttt{library.tex}.
-\item Rename \texttt{library.tex} to \texttt{final_library.tex} and
-  set the \texttt{PREFIX} in \texttt{randexam} to \texttt{final_}.
-\item Edit \texttt{final_library.tex} to add questions and make the
-  coversheet.
-\item Run \texttt{./randexam proc-lib}.
-\item Run \texttt{pdflatex final_exams.tex}, and look at the output
-  near the end for information about exam lengths.
+\section{Preparing the exams}
+
+\begin{enumerate}
+\item Obtain a copy of \texttt{randexam} and \texttt{library.tex}.
+\item On Mac or Linux, make sure \texttt{randexam} is executable, or
+  make it so with \texttt{chmod +x randexam}.
+\item On Windows, it may be necessary to rename \texttt{randexam} to
+  \texttt{randexam.py} and to run it with \texttt{python randexam.py
+    <arguments>} rather than \texttt{./randexam <arguments>}.
+\item Set the \texttt{PREFIX} in \texttt{randexam} to
+  \texttt{tam212_fall2014_midterm2_} (note the trailing underscore) or
+  similar, and correspondingly rename \texttt{library.tex} to
+  \texttt{tam212_fall2014_midterm2_library.tex}. Hereafter we write
+  \texttt{XXX} in place of the prefix, so this file is referred to as
+  \texttt{XXX_library.tex}.
+\item Edit \texttt{XXX_library.tex} to add questions and make the
+  cover sheet. This file can be latexed to produce the library PDF
+  file that contains all variants of all questions.
+\item Run \texttt{./randexam proc-lib}. This will produce the output
+  tex file as well as various files summarizing the randomization,
+  question points, and so on.
+\item Run \texttt{pdflatex XXX_exams.tex}, and look at the output near
+  the end for information about exam lengths.
 \item Adjust \texttt{MINIMUM_EXAM_PAGES} in \texttt{randexam} to be
   the smallest even number that is at least as large as the maximum
-  raw length.
-\end{itemize}
+  raw length, then re-run \texttt{./randexam proc-lib} and re-latex.
+\end{enumerate}
 
-\subsection{Administering the exams}
+\section{Tips for exam preparation}
 
-\begin{itemize}
+\begin{enumerate}
+\item Try to have about three variants of each question. The variants
+  should be of equal difficulty and should only differ in some
+  unimportant way. For example, reverse the orientation of a figure,
+  change the value of one number, etc.
+\item Zones serve two purposes: (1) to group questions so that random
+  permutations only occur within a zone, not between zones (allowing
+  the exam to start with 5 easy questions, for example); and (2) to
+  insert text at a certain point in the exam. Zones do not need to
+  contain any questions, so they can be used just to insert text, for
+  example a formula sheet at the start or end of the exam.
+\item Points are assigned on a per-question basis, so all variants of
+  a given question are worth the same number of points.
+\item Only one answer can be marked as correct for each variant. This
+  answer will be awarded the full points for that question, and all
+  other answers will be worth zero points. This can be adjusted by
+  manually editing \texttt{points.csv}, which allows points to be
+  assigned to any answer of any variant in an arbitrary way, including
+  negative points and real-valued points.
+\item Questions do not have any text associated with them directly. If
+  there is text that is common to all variants of a question then it
+  must be repeated in each variant.
+\item Variants are not required to have any answers. This is useful
+  for including questions that the students must answer via some other
+  means, such as long-form written answer.
+\end{enumerate}
+
+\section{Administering the exams}
+
+\begin{enumerate}
+\item Send the \texttt{XXX_exams.pdf} file
+  containing all the exams to Document Services, via a department
+  secretary. The instructions should be something like:
+
+  \rule{\linewidth}{0.5pt}
+
+  \parbox{\linewidth}{
+    \tt
+    Printing type: double-sided, staple every 11 sheets of paper (that is, every 22 PDF pages) to form 700 total exam papers \\
+    Deliver to: MEB 160 by Thursday morning (Oct 16)
+  }
+
+  \rule{\linewidth}{0.5pt}
+
+  Here the number 22 is the value of \texttt{MINIMUM_EXAM_PAGES} and
+  11 is half of this value. In the case the PDF file should have $22
+  \times 700 = 15\,400$ total PDF pages.
+\item Obtain Scantron sheets from CITL Exam Services (Armory
+  247). These are free.
+\item Hand out the exam booklets and Scantron sheets to
+  students. Instruct them to fill in their information on the Scantron
+  sheet and on the exam booklet. They should pay special attention to
+  completing their NetID on the Scantron and correctly encoding the
+  exam key from the exam booklet onto the last few questions on the
+  Scantron.
+\item Have the students do the exam.
 \item Collect both the Scantron sheets and the exam papers (with names
   on them) from the students, so that exam papers can be later matched
-  to students if needed.
-\end{itemize}
+  to students if needed. Ensure that the NetID and Exam Key (the last
+  few questions on the Scantron) are filled in for every student.
+\item Arrange the Scantron forms so that the cut corners are all
+  aligned.
+\item Take the Scantrons to CITL Exam Services (Armory 247). Tell them
+  that you want the ``dot dat'' file sent to you. This refers to a
+  filename like \texttt{jd17699.dat} that contains the raw scantron
+  data.
+\end{enumerate}
 
-\subsection{Grading the exams}
+\section{DRES students}
 
-\begin{itemize}
-\item Make a subdirectory called \texttt{2_scantrons} containing a raw
-  unedited copy of the Scantron data files.
-\item Make a subdirectory called \texttt{3_grading} and copy in the
-  contents of both \texttt{1_exams} and \texttt{2_scantrons}. All
-  editing should be done in this third directory.
+\begin{enumerate}
+\item Inform DRES students before the exam that they should schedule
+  their exams at the DRES facility. Tell DRES that the allowed window
+  for the exam is from the afternoon on the day of the exam to the
+  evening of the day following.
+\item Extract individual exam PDFs from the large \texttt{exams.pdf}
+  file and call these \texttt{DRES1.pdf}, \texttt{DRES2.pdf},
+  etc. This can be done using Adobe Acrobat Pro, or on Mac OS X using
+  Preview and Print to PDF.
+\item Email these individual PDFs to DRES and tell DRES that the
+  students need to use an orange 96-question Scantron form, and that
+  you want both the exam paper and the Scantron form returned to you.
+\end{enumerate}
+
+\section{Conflict exams}
+
+\begin{enumerate}
+\item Schedule conflict exams starting 2 hours before the real exam
+  (assuming a 2-h exam) until the afternoon of the following day. A
+  good timeslot is 7~am the morning after the real exam, which ensures
+  that only students who really need the conflict will use it.
+\item Conflict exams can use the same exam as the real exam, as we
+  rely on the randomization to make cheating difficult.
+\item Conflict exams should be administered using printed copies of
+  the exam from the main printing.
+\end{enumerate}
+
+\section{Grading the exams}
+
+\begin{enumerate}
+\item Obtain the \texttt{jdXXXX.dat} file from Exam Services and
+  rename it to \texttt{XXX_scantron.dat} or similar.
+\item Extra exams, such as DRES or conflicts, can be hand-entered into
+  the \texttt{scantron.dat} file. The format of lines in this file is
+  described in detail in \texttt{randexam-dev-manual.pdf}.
+\item By default, \texttt{randexam} will look for a file called
+  \texttt{XXX_netids.txt} in the current directory. This should
+  contain the class roster, listed as one NetID per line, and is used
+  to check validity of the NetIDs in \texttt{scantron.dat}. If this
+  checking is not desired then set \texttt{CHECK_VALID_NETIDS = False}
+  in \texttt{randexam}.
 \item Run \texttt{./randexam proc-scan} and clean up errors in the
-  file as needed.
-\item Run \texttt{./randexam proc-ans}.
+  \texttt{scantron.dat} file as needed. It is essential that every
+  student has a correct exam key for grading to occur, and their NetID
+  should also be correct for email sending and gradebook
+  uploads. Other data (name, student ID, etc) is only for
+  informational and checking purposes.
+\item If desired, hand-edit the \texttt{points.csv} file to change the
+  number of points awarded for each variant of each question. This is
+  a good way to give all students full points for a given question, if
+  a question was badly worded or incorrect.
+\item Run \texttt{./randexam proc-ans} to perform the actual
+  grading. This will generate exam statistics in tex file and the
+  final scores in the files \texttt{XXX_scores.csv} and
+  \texttt{XXX_gradebook.csv} (two different formats of the same
+  information).
+\item Run \texttt{pdflatex XXX_stats.tex} to generate a PDF of the
+  exam statistics.
 \item If desired, run \texttt{./randexam proc-curve} and adjust the
-  \texttt{curve_scores()} function in \texttt{randexam} as desired.
-\item Upload \texttt{gradebook.csv} to record the total scores.
-\item Run \texttt{./randexam proc-feedback}.
+  \texttt{curve_scores()} function in \texttt{randexam} as
+  desired. The default curving functions are described at
+  \url{http://lagrange.mechse.illinois.edu/mwest/curving/}.
+\end{enumerate}
+
+\section{Allowing partial credit for multiple answers}
+
+\begin{enumerate}
+\item If desired, \texttt{randexam} can allow students to fill in
+  multiple answers for a single question, and then give partial credit
+  for that question if one of the provided answers was correct. To
+  achieve this, several changes need to be made to the exam process,
+  as follows.
+\item When processing the Scantrons at CITL Exam Services, they need
+  to scan the exam in a ``multiple answer'' format. This alters the
+  \texttt{.dat} file format that they return.
+\item Before running \texttt{./randexam proc-scan}, edit
+  \texttt{randexam} and set \texttt{MULTIPLE_ANSWERS_PER_QUESTION =
+    True}. The \texttt{SCORE_PER_ANSWERS} array is the fraction of
+  points awarded for each number of provided answers, if the correct
+  answer is one of them. By default this is 0 points for 0 answers, 1
+  for a single answer (that is, full points), 1/2 for two provided
+  answers (one of which must be correct), 1/3 for three answers, and
+  no points if four or more answers are given.
+\end{enumerate}
+
+\section{Interpreting the exam statistics}
+
+\begin{enumerate}
+\item The \texttt{XXX_stats.pdf} file contains summary statistics for
+  the exam and questions.
+\item Check that the median score is reasonable (typically around 80
+  to have half the class in the A/B range), and curve the scores if
+  desired.
+\item Check that all question have variants that are fairly similar to
+  each other in relative points. If $R_{\rm QV}$ is less that about
+  80\% or more than about 120\%, then investigate why some variants
+  are significantly different and consider awarding all students full
+  points for that question.
+\item Check that all questions have discrimination values of at least
+  20\% (higher is better). Very easy questions (difficulty below 10\%)
+  can legitimately have low discrimination without this being a
+  problem. If a question has difficulty over 10\% and discrimination
+  below 20\%, however, then investigate to see whether the question is
+  poorly worded or incorrect, and consider awarding all students full
+  points for that question.
+\end{enumerate}
+
+\section{Uploading scores to Compass}
+
+\begin{enumerate}
+\item Go to \texttt{Grade Center $\to$ Full Grade Center} in the
+  left-hand menu.
+\item Back up the current data with \texttt{Work Offline $\to$
+    Download}.
+\item Edit the \texttt{gradebook.csv} file generated by
+  \texttt{randexam} to add a new first line consisting of:
+  \begin{center}
+    \texttt{"Username","Test Name"}
+  \end{center}
+  where \texttt{Test Name} is replaced by something like
+  \texttt{Midterm 2} or \texttt{Final}.
+\item Go to \texttt{Work Offline $\to$ Upload} and upload the edited
+  \texttt{gradebook.csv} file.
+\item In the grade center, set \texttt{Sort Columns By: Date Created}
+  and \texttt{Order: Ascending}.
+\item Select \texttt{Edit Column Information} from the drop-down menu
+  next to the newly-uploaded column.
+\item Set:
+  \begin{itemize}
+  \item \texttt{Primary Display: Score}
+  \item \texttt{Category: Test}
+  \item \texttt{Points Possible: 100}
+  \item \texttt{Show Statistics: Yes}
+  \end{itemize}
+\end{enumerate}
+
+\section{Sending feedback emails to students}
+
+\begin{enumerate}
+\item Run \texttt{./randexam proc-feedback} to generate per-student
+  feedback PDFs. These are created in the \texttt{FEEDBACK_DIRECTORY}
+  (by default, a \texttt{feedback/} subdirectory). If there are extra
+  files needed to latex the feedback, such as figures, then they need
+  to be copied by hand into the feedback directory before running
+  \texttt{./randexam proc-feedback}.
 \item If desired, create a \verb+rawscan+ directory with PDFs of
-  individual Scantron sheets to be included in email feedback.
-\item Run \texttt{./randexam proc-email}.
-\end{itemize}
+  individual Scantron sheets to be included in email feedback and
+  correspondingly set the \texttt{RAWSCAN_DIRECTORY} variable in
+  randexam.
+\item Run \texttt{./randexam proc-email}. This will ask for the NetID
+  and password of the account that is sending the email.
+
+  To be able to send email directly through the UIUC email servers,
+  your NetID needs to be authorized by CITES. This only needs to be
+  done once, as it will stay authorized. To do this, send email to the
+  CITES Help Desk at \texttt{consult@illinois.edu} with the message
+  ``I request IMAP access for my email.''
+
+  After each email has been send, a file is created in the feedback
+  directory called \texttt{<NetID>.email_sent}. If \texttt{./randexam
+    proc-email} is re-run, then students with such a file won't be
+  sent further email. Thus email sending can be retried repeatedly
+  until all emails are successfully sent. Deleting the
+  \texttt{.email_sent} files will re-enable sending to those students.
+\end{enumerate}
 
 \end{document}

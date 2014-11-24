@@ -101,28 +101,7 @@ Figure~\ref{fig:library-tree}. An outline of the \LaTeX{} in the
 \texttt{library.tex} is given in Figure~\ref{fig:library-outline}. The
 \texttt{randexam} script processes \texttt{library.tex} using a state
 machine. The state transition graph is shown in
-Figure~\ref{fig:statemachine}. Note the following points:
-\begin{itemize}
-\item Zones serve two purposes: (1) to group questions so that random
-  permutations only occur within a zone, not between zones; and (2) to
-  insert text at a certain point in the exam. Zones do not need to
-  contain any questions, so they can be used just to insert text, for
-  example a formula sheet at the start or end of the exam.
-\item Points are assigned on a per-question basis, so all variants of
-  a given question are worth the same number of points.
-\item Only one answer can be marked as correct for each variant. This
-  answer will be awarded the full points for that question, and all
-  other answers will be worth zero points. This can be adjusted by
-  manually editing \texttt{points.csv}, which allows points to be
-  assigned to any answer of any variant in an arbitrary way, including
-  negative points and real-valued points.
-\item Questions do not have any text associated with them directly. If
-  there is text that is common to all variants of a question then it
-  must be repeated in each variant.
-\item Variants are not required to have any answers. This is useful
-  for including questions that the students must answer via some other
-  means, such as long-form written answer.
-\end{itemize}
+Figure~\ref{fig:statemachine}.
 
 \begin{figure}
   \centering
