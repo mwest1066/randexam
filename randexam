@@ -1719,38 +1719,22 @@ def curve_scores(P_s):
     P_curve_s = P_s
     N_s = len(P_s)
 
-    old_mean = P_s.mean()
-    old_std = P_s.std()
-    old_max = P_s.max()
-    old_min = P_s.min()
+    max_score = 100
 
-    new_mean = 75
-    new_std = 10
-    new_max = 100
-    new_min = 0
+    old_median = numpy.median(P_s)
+    new_median = 80
 
-    old_data = np.array([old_min, old_mean, old_max])
-    new_data = np.array([new_min, new_mean, new_max])
-    #interp = scipy.interpolate.pchip(old_data, new_data)
-    #interp = scipy.interpolate.InterpolatedUnivariateSpline(old_data, new_data, k=2)
-    #interp = scipy.interpolate.InterpolatedUnivariateSpline([0,  20, 40, 60, 80],
-    #                                                        [50, 70, 83, 95, 100])
+    new_zero = 20 # only used for the piecewise variant below
 
     for i in range(N_s):
-        #P_curve_s[i] = interp(P_s[i])
-
-        # linear
-        #P_curve_s[i] = (P_s[i] - old_min) / (old_max - old_min) * (new_max - new_min) + new_min
-
-        # linear mean/std
-        P_curve_s[i] = (P_s[i] - old_mean) * new_std / old_std + new_mean
-        P_curve_s[i] = min(new_max, max(new_min, P_curve_s[i]))
+        P_curve_s[i] = max_score - (max_score - P_s[i]) * (max_score - new_median) / (max_score - old_median)
 
         # piecewise linear
-        #if P_s[i] > old_mean:
-        #    P_curve_s[i] = (P_s[i] - old_mean) / (old_max - old_mean) * (new_max - new_mean) + new_mean
+        #if P_s[i] > old_median:
+        #    P_curve_s[i] = max_score - (max_score - P_s[i]) * (max_score - new_median) / (max_score - old_median)
         #else:
-        #    P_curve_s[i] = (P_s[i] - old_mean) / (old_min - old_mean) * (new_min - new_mean) + new_mean
+        #    P_curve_s[i] = new_zero + P_s[i] * (new_median - new_zero) / old_median
+
     return P_curve_s
 
 ######################################################################
