@@ -1,4 +1,13 @@
 
+1.11.0 - XXXX-XX-XX
+
+  * Significantly expand the `randexam-user-manual`.
+
+  * Change `curve_scores()` to default to a linear map specified by
+    the maximum score and median values.
+
+  * Add output of `q_sQ`, `V_sQ`, and `c_sQ` arrays.
+
 1.10.0 - 2014-11-19
 
   * Fix comment-stripping bug within questions.
@@ -16,8 +25,7 @@
 
 1.9.0 - 2014-03-04
 
-  * Fix description of relative points plot in `stats.pdf`
-    (Matt West).
+  * Fix description of relative points plot in `stats.pdf`.
 
   * Add `MULTIPLE_ANSWERS_PER_QUESTION` option to handle
     partial credit for multiple answers (Dallas Trinkle).
@@ -60,9 +68,9 @@
 
   * Output score arrays as CSV files.
 
-  * Generate per-student feedback files.
+  * Generate per-student feedback files (Lee DeVille).
 
-  * Email feedback directly to students.
+  * Email feedback directly to students (Lee DeVille).
 
   * Allow curving of final scores.
 
@@ -84,7 +92,7 @@
 
   * Fix `solutions.csv` output.
 
-  * Renames `grades.csv` to `scores.csv`.
+  * Rename `grades.csv` to `scores.csv`.
 
 1.0.0 - 2012-12-18
 
