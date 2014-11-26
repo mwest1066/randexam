@@ -7,6 +7,9 @@
 \usepackage{longtable}
 \usepackage{hyperref}
 
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+
 \begin{document}
 
 \title{\texttt{randexam}: Randomized Exam Generation and Grading\\[1em] User Manual\\[1em] \Large Version 1.10.0}
@@ -40,8 +43,8 @@ random, and the order of the answers is also randomized.
     <arguments>} rather than \texttt{./randexam <arguments>}.
 \item Set the \texttt{ExamTitle} in \texttt{config.ini}.
 \item Set the \texttt{FilenamePrefix} in \texttt{config.ini} to
-  \texttt{tam212_fall2014_midterm2_} (note the trailing underscore) or
-  similar, and correspondingly rename \texttt{library.tex} to
+  \texttt{tam212_fall2014_midterm2} or similar, and correspondingly
+  rename \texttt{library.tex} to
   \texttt{tam212_fall2014_midterm2_library.tex}. Hereafter we write
   \texttt{XXX} in place of the prefix, so this file is referred to as
   \texttt{XXX_library.tex}.
@@ -103,89 +106,100 @@ random, and the order of the answers is also randomized.
 
 \section{Configuration Options}
 
-{\renewcommand{\arraystretch}{1.5}
-\begin{longtable}[c]{llp{7cm}}
-  Variable & Default & Description \\
-  \hline
-  \endhead
-  AnswersPerQuestion & 5
-  & Number of possible answers (Scantron bubbles) per question on
-  the Scantron form. \\
-  CheckRepeatedExamKeys & Yes
-  & Check for repeated use of each exam key, and report when this
-  happens. If you are using individualized exams then this should
-  not occur. \\
-  CheckValidNetIDs & Yes
-  & Check whether all students taking the exam have NetIDs listed
-  in the \texttt{XXX_netids.txt} file. \\
-  ExamTitle & Exam
-  & Title of the exam (used in statistics reports). \\
-  FilenamePrefix & \emph{blank}
-  & Prefix to append to all input and output filenames. This is
-  the \texttt{XXX} in filenames like \texttt{XXX_library.tex}.
-  The FilenamePrefix should uniquely specify the exam and end in
-  an underscore. For example, \texttt{tam212_S13_final_} would
-  indicate the final exam in Spring 2013 for the course TAM
-  212. \\
-  LastScantronQuestionNumber & 96
-  & Number of the last question on the Scantron form. This is
-  used to determine the questions that will store the exam key. \\
-  MailDomain & illinois.edu
-  & Domain name to append to student NetID to produce email
-  addresses. \\
-  MailMaxAttempts & 5
-  & Maximum number of times to retry sending each feedback email
-  before giving up. \\
-  MailMaxPerSecond & 1
-  & Maximum email sending rate, in emails per second. \\
-  MailMessageText & \emph{message}
-  & Text to use in the feedback email. See \texttt{randexam} for
-  the default message. \\
-  MailRetryDelaySeconds & 30
-  & Number of seconds to delay between retries of failed feedback
-  email sending. \\
-  MailServer & smtp.illinois.edu
-  & SMTP mail server to use for outgoing feedback emails.
-  Connections will be made on port 587 using TLS and authenticated
-  with the provided username/password. \\
-  MailSignatureFile & $\sim$/.signature
-  & Signature file to include at the end of feedback email messages,
-  if the file exists. \\
-  MailTimeoutSeconds & 120
-  & Timeout for all mail operations (connecting, sending, etc).
-  Operations that take longer than this will be considered an
-  error. \\
-  MaxAnswersPerQuestion & 3
-  & Maximum number of answers for a question to still receive some
-  partial credit. Only used if MultipleAnswersPerQuestion is Yes. \\
-  MinimumPagesPerExam & 2
-  & Length that every exam will be padded out to. Should be the
-  smallest even number at least equal to $N + 1$, where $N$ is the
-  maximum raw length reported by latex when processing
-  \texttt{XXX_exams.tex}. \\
-  MultipleAnswersPerQuestion & No
-  & Whether multiple answers per question are permitted (if more than
-  one answer is given, then partial credit is awarded in inverse
-  proportion to the number of given answers). \\
-  NumberOfExams & 1
-  & Number of randomized exam papers to generate. \\
-  OnePagePerQuestion & No
-  & Whether the randomized exams should be formatted with every
-  question on a different page. \\
-  RandomSeed & 7
-  & Seed value for the random number generator that creates the
-  randomized exams. Random numbers are only generated during
-  \texttt{randexam proc-lib}. The same value of RandomSeed will
-  result in the same randomized exam generation, assuming the same
-  version of Python on the same computer. \\
-  FeedbackDirectory & feedback
-  & Directory name where feedback PDFs are stored. \\
-  RawScanDirectory & \emph{blank}
-  & Directory name where image scans of the Scantrons forms are
-  stored. If blank, then these are ignored. If non-blank, these
-  scans are attached to feedback emails.
-\end{longtable}
-}
+\hangindent=1cm \texttt{answers_per_question} (default: \texttt{5})
+Number of possible answers per question on the Scantron form. That is,
+the number of Scantron bubbles for each question.
+
+\hangindent=1cm \texttt{check_repeated_exam_keys} (default:
+\texttt{Yes}) Check for repeated use of each exam key, and report when
+this happens. If you are using individualized exams then this should
+not occur.
+
+\hangindent=1cm \texttt{check_valid_netids} (default: \texttt{Yes})
+Check whether all students taking the exam have NetIDs listed in the
+\texttt{XXX_netids.txt} file.
+
+\hangindent=1cm \texttt{exam_title} (default: \texttt{Exam}) Title of
+the exam (used in statistics reports).
+
+\hangindent=1cm \texttt{filename_prefix} (default: \emph{blank})
+Prefix to append to all input and output filenames. This is the
+\texttt{XXX} in filenames like \texttt{XXX_library.tex}.  The
+filename_prefix should uniquely specify the exam and end in an
+underscore. For example, \texttt{tam212_S13_final} would indicate the
+final exam in Spring 2013 for the course TAM 212.
+
+\hangindent=1cm \texttt{last_scantron_question_number} (default:
+\texttt{96}) Number of the last question on the Scantron form. This is
+used to determine the questions that will store the exam key.
+
+\hangindent=1cm \texttt{mail_domain} (default: \texttt{illinois.edu})
+Domain name to append to student NetID to produce email addresses.
+
+\hangindent=1cm \texttt{mail_max_attempts} (default: \texttt{5})
+Maximum number of times to retry sending each feedback email before
+giving up.
+
+\hangindent=1cm \texttt{mail_max_per_second} (default: \texttt{1})
+Maximum email sending rate, in emails per second.
+
+\hangindent=1cm \texttt{mail_message_text} (default: \texttt{The
+  attached file contains your test results.}) Text to use in the
+feedback email.
+
+\hangindent=1cm \texttt{mail_retry_delay_seconds} (default:
+\texttt{30}) Number of seconds to delay between retries of failed
+feedback email sending.
+
+\hangindent=1cm \texttt{mail_server} (default:
+\texttt{smtp.illinois.edu}) SMTP mail server to use for outgoing
+feedback emails.  Connections will be made on port 587 using TLS and
+authenticated with the provided username/password.
+
+\hangindent=1cm \texttt{mail_signature_file} (default:
+\texttt{$\sim$/.signature}) Signature file to include at the end of
+feedback email messages, if the file exists.
+
+\hangindent=1cm \texttt{mail_timeout_seconds} (default: \texttt{120})
+Timeout for all mail operations (connecting, sending, etc).
+Operations that take longer than this will be considered an error.
+
+\hangindent=1cm \texttt{max_answers_per_question} (default:
+\texttt{3}) Maximum number of answers for a question to still receive
+some partial credit. Only used if
+\texttt{multiple_answers_per_question} is \texttt{Yes}.
+
+\hangindent=1cm \texttt{minimum_pages_per_exam} (default: \texttt{2})
+Length that every exam will be padded out to. Should be the smallest
+even number at least equal to $N + 1$, where $N$ is the maximum raw
+length reported by latex when processing \texttt{XXX_exams.tex}.
+
+\hangindent=1cm \texttt{multiple_answers_per_question} (default:
+\texttt{No}) Whether multiple answers per question are permitted (if
+more than one answer is given, then partial credit is awarded in
+inverse proportion to the number of given answers).
+
+\hangindent=1cm \texttt{number_of_exams} (default: \texttt{1}) Number
+of randomized exam papers to generate.
+
+\hangindent=1cm \texttt{one_page_per_question} (default: \texttt{No})
+Whether the randomized exams should be formatted with every question
+on a different page.
+
+\hangindent=1cm \texttt{random_seed} (default: \texttt{7}) Seed value
+for the random number generator that creates the randomized
+exams. Random numbers are only generated during \texttt{randexam
+  proc-lib}. The same value of random_seed will result in the same
+randomized exam generation, assuming the same version of Python on the
+same computer.
+
+\hangindent=1cm \texttt{feedback_directory} (default:
+\texttt{feedback}) Directory name where feedback PDFs are stored.
+
+\hangindent=1cm \texttt{raw_scan_directory} (default: \emph{blank})
+Directory name where image scans of the Scantrons forms are stored. If
+blank, then these are ignored. If non-blank, these scans are attached
+to feedback emails.
 
 \section{Administering the exams}
 
@@ -204,7 +218,7 @@ random, and the order of the answers is also randomized.
 
   \rule{\linewidth}{0.5pt}
 
-  Here the number 22 is the value of \texttt{MinimumPagesPerExam} and
+  Here the number 22 is the value of \texttt{minimum_pages_per_exam} and
   11 is half of this value. In the case the PDF file should have $22
   \times 700 = 15\,400$ total PDF pages.
 \item Obtain Scantron sheets from CITL Exam Services (Armory
@@ -269,7 +283,7 @@ random, and the order of the answers is also randomized.
   \texttt{XXX_netids.txt} in the current directory. This should
   contain the class roster, listed as one NetID per line, and is used
   to check validity of the NetIDs in \texttt{scantron.dat}. If this
-  checking is not desired then set \texttt{CheckValidNetIDs: No}
+  checking is not desired then set \texttt{check_valid_netids: No}
   in \texttt{randexam}.
 \item Run \texttt{./randexam proc-scan} and clean up errors in the
   \texttt{scantron.dat} file as needed. It is essential that every
@@ -306,7 +320,7 @@ random, and the order of the answers is also randomized.
   to scan the exam in a ``multiple answer'' format. This alters the
   \texttt{.dat} file format that they return.
 \item Before running \texttt{./randexam proc-scan}, edit
-  \texttt{config.ini} and set \texttt{MultipleAnswersPerQuestion:
+  \texttt{config.ini} and set \texttt{multiple_answers_per_question:
     Yes}.
 \item If multiple answers are given for a question, then the student
   is given partial credit if one of them is correct. The amount of
@@ -315,7 +329,7 @@ random, and the order of the answers is also randomized.
   answers, etc. In all cases, if the correct answer was not one of the
   given answers then no points are given. The maximum number of
   answers for which partial credit will be awarded is controlled by
-  the MaxAnswersPerQuestion variable.
+  the \texttt{max_answers_per_question} variable.
 \end{enumerate}
 
 \section{Interpreting the exam statistics}
@@ -374,14 +388,14 @@ random, and the order of the answers is also randomized.
 \begin{enumerate}
 \item Run \texttt{./randexam proc-feedback} to generate per-student
   feedback PDFs. These are created in the directory named by the
-  \texttt{FeedbackDirectory} variable in \texttt{config.ini} (by
+  \texttt{feedback_directory} variable in \texttt{config.ini} (by
   default, a \texttt{feedback/} subdirectory). If there are extra
   files needed to latex the feedback, such as figures, then they need
   to be copied by hand into the feedback directory before running
   \texttt{./randexam proc-feedback}.
 \item If desired, create a \verb+rawscan+ directory with PDFs of
   individual Scantron sheets to be included in email feedback and
-  correspondingly set the \texttt{RawScanDirectory} variable in
+  correspondingly set the \texttt{raw_scan_directory} variable in
   \texttt{config.ini}.
 \item Run \texttt{./randexam proc-email}. This will ask for the NetID
   and password of the account that is sending the email.
@@ -397,7 +411,7 @@ random, and the order of the answers is also randomized.
     proc-email} is re-run, then students with such a file won't be
   sent further email. Thus email sending can be retried repeatedly
   until all emails are successfully sent. Deleting the
-  \texttt{.email_sent} files will re-enable sending to those students.
+  \texttt{*.email_sent} files will re-enable sending to those students.
 \end{enumerate}
 
 \end{document}
