@@ -31,6 +31,26 @@ the same order. Within each zone, the order of questions is
 randomized. For each question, one of the variants is selected at
 random, and the order of the answers is also randomized.
 
+There are two important identifiers used by \texttt{randexam}: the
+\emph{NetID} identifies students and the \emph{exam key} identifies
+exams. The exam key is a string of the form \texttt{BAECCD}, where the
+number of letters depends on the number of randomized exams
+generated. The exam key uniquely identifies the randomized exam, and
+so it is written on the front of the exam booklet and must be copied
+by the student onto the Scantron sheet, where it is encoded into the
+last few questions on the Scantron.
+
+The exam keys for a particular exam are generated so that they all
+differ by at least three letters. This means that if a student makes
+an error in copying their exam key, they won't accidentally produce
+another valid exam key. In particular, if they make only a
+single-letter error, then it is possible to correct this
+automatically, and mis-copying two letters can be detected but not
+automatically corrected. If they mis-copy three or more letters,
+however, then they may produce another valid key, and this can only be
+detected by observing that their score was very low (effectively
+random guessing). In practice this has never occurred.
+
 \section{Preparing the exams}
 
 \begin{enumerate}
@@ -41,11 +61,11 @@ random, and the order of the answers is also randomized.
 \item On Windows, it may be necessary to rename \texttt{randexam} to
   \texttt{randexam.py} and to run it with \texttt{python randexam.py
     <arguments>} rather than \texttt{./randexam <arguments>}.
-\item Set the \texttt{ExamTitle} in \texttt{config.ini}.
-\item Set the \texttt{FilenamePrefix} in \texttt{config.ini} to
-  \texttt{tam212_fall2014_midterm2} or similar, and correspondingly
-  rename \texttt{library.tex} to
-  \texttt{tam212_fall2014_midterm2_library.tex}. Hereafter we write
+\item Set the \texttt{exam_title} in \texttt{config.ini}.
+\item Set the \texttt{filename_prefix} in \texttt{config.ini} to
+  \texttt{TAM212_F14_Midterm2} or similar, and correspondingly rename
+  \texttt{library.tex} to
+  \texttt{TAM212_F14_Midterm2_library.tex}. Hereafter we write
   \texttt{XXX} in place of the prefix, so this file is referred to as
   \texttt{XXX_library.tex}.
 \item Edit \texttt{XXX_library.tex} to add questions and make the
@@ -57,7 +77,7 @@ random, and the order of the answers is also randomized.
 \item Run \texttt{pdflatex XXX_exams.tex}, and look at the output near
   the end for information about exam lengths.
 \item To ensure all exams have the same number of pages and the last
-  page is blank, adjust \texttt{MinimumPagesPerExam} in
+  page is blank, adjust \texttt{minimum_pages_per_exam} in
   \texttt{randexam} to be the smallest even number that is at least $N
   + 1$, where $N$ is the maximum raw length reported by latex when
   processing \texttt{XXX_exams.tex}. Then re-run \texttt{./randexam
@@ -125,9 +145,9 @@ the exam (used in statistics reports).
 \hangindent=1cm \texttt{filename_prefix} (default: \emph{blank})
 Prefix to append to all input and output filenames. This is the
 \texttt{XXX} in filenames like \texttt{XXX_library.tex}.  The
-filename_prefix should uniquely specify the exam and end in an
-underscore. For example, \texttt{tam212_S13_final} would indicate the
-final exam in Spring 2013 for the course TAM 212.
+filename_prefix should uniquely specify the exam. For example,
+\texttt{TAM212_S13_Final} would indicate the final exam in Spring 2013
+for the course TAM 212.
 
 \hangindent=1cm \texttt{last_scantron_question_number} (default:
 \texttt{96}) Number of the last question on the Scantron form. This is
