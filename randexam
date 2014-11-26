@@ -6,7 +6,6 @@ RELEASE_DATE = "2014-11-19"
 import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
 import numpy as np
-#import scipy.interpolate
 
 ######################################################################
 ######################################################################
@@ -38,15 +37,54 @@ MAIL_MAX_ATTEMPTS = 5 # maximum number of sending attempts per email
 MAIL_TIMEOUT = 120 # timeout for all email operations (seconds)
 MAIL_RETRY_DELAY = 30 # delay before email fail retries (seconds)
 MAIL_SIGNATURE_FILENAME = os.path.expanduser("~/.signature") # set to "" to disable signature searching
-MAIL_MSG_TXT = """
-The attached file contains a summary of your recent test results.
+MAIL_MSG_TXT = 
 
-If this email was mistakenly sent to you, please reply and let me know.
+######################################################################
+######################################################################
+# python 2.X versus 3.X differences
 
-Sincerely,
-Your Professor
+if sys.version_info[0] < 3 and sys.version_info[1] < 7:
+    print("This script requires python version at least 2.7, current version is %s" % sys.version)
+    sys.exit(1)
+elif sys.version_info[0] < 3:
+    # Python 2.x
+    CSV_WRITER_ARGS = {"mode": "wb"}
+    import ConfigParser as configparser
+else:
+    # Python 3.x
+    CSV_WRITER_ARGS = {"mode": "w", "newline": ""}
+    import configparser
 
-"""
+######################################################################
+######################################################################
+# Configuration
+
+CONFIG_FILENAME = "config.ini"
+
+# Allowed types of config vars are string, int, float, bool. Value type is used by read_config().
+DEFAULT_CONFIG = {
+    "AnswersPerQuestion": 5,
+    "CheckRepeatedExamKeys": True,
+    "CheckValidNetIDs": True,
+    "ExamTitle": "Exam",
+    "FilenamePrefix": "",
+    "LastScantronQuestionNumber": 96,
+    "MailMaxAttempts": 5,
+    "MailMaxPerSecond": 1.0,
+    "MailMessageText": "The attached file contains your test results.",
+    "MailRetryDelaySeconds": 30.0,
+    "MailServer": "smtp.illinois.edu",
+    "MailSignatureFile": "~/.signature",
+    "MailTimeoutSeconds": 120.0,
+    "MaxAnswersPerQuestion": 3,
+    "MinimumPagesPerExam": 2,
+    "MultipleAnswersPerQuestion": False,
+    "NumberOfExams": 1,
+    "OnePagePerQuestion": False,
+    "RandomSeed": 7,
+    "FeedbackDirectory": "feedback",
+    "RawScanDirectory": "",
+}
 
 ######################################################################
 ######################################################################
@@ -70,7 +108,6 @@ GRADEBOOK_FILENAME = FILENAME_PREFIX + "gradebook.csv"
 STATS_FILENAME = FILENAME_PREFIX + "stats.tex"
 CURVE_STATS_FILENAME = FILENAME_PREFIX + "curve_stats.tex"
 RAW_STATS_PREFIX = FILENAME_PREFIX + "stats"
-EMAIL_FILENAME = os.path.join(FEEDBACK_DIRECTORY, FILENAME_PREFIX + "emailscript")
 
 # logging filenames
 LOG_PROC_LIB_FILENAME = FILENAME_PREFIX + "proc_lib.log"
@@ -79,18 +116,6 @@ LOG_PROC_ANS_FILENAME = FILENAME_PREFIX + "proc_ans.log"
 LOG_PROC_FEEDBACK_FILENAME = FILENAME_PREFIX + "proc_feedback.log"
 LOG_PROC_EMAIL_FILENAME = FILENAME_PREFIX + "proc_email.log"
 LOG_PROC_CURVE_FILENAME = FILENAME_PREFIX + "proc_curve.log"
-
-######################################################################
-######################################################################
-# python 2.X versus 3.X differences
-
-if sys.version_info[0] < 3 and sys.version_info[1] < 7:
-    print("This script requires python version at least 2.7, current version is %s" % sys.version)
-    sys.exit(1)
-elif sys.version_info[0] < 3:
-    CSV_WRITER_ARGS = {"mode": "wb"}
-else:
-    CSV_WRITER_ARGS = {"mode": "w", "newline": ""}
 
 ######################################################################
 ######################################################################
@@ -111,91 +136,97 @@ def main():
         sys.exit(0)
 
     if sys.argv[1] == "proc-lib":
-        protected_filenames = [f for f in [POINTS_FILENAME, SPECS_FILENAME, EXAMS_FILENAME, SOLUTIONS_FILENAME]
+        init_logging(LOG_PROC_LIB_FILENAME)
+        log_and_print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
+        config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
+        protected_filenames = [f for f in [filename("points", config), filename("specs", config), filename("exams", config), filename("solutions", config)]
                                if os.path.exists(f)]
         if len(protected_filenames) > 0:
             print("ERROR: output files already exist, will not overwrite: %s"
                   % " ".join(protected_filenames))
             sys.exit(1)
-        init_logging(LOG_PROC_LIB_FILENAME)
-        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
         random.seed(RANDOM_SEED)
-        library = read_library(LIBRARY_FILENAME)
+        library = read_library(filename("library", config))
         check_library(library)
         (P, C) = extract_points(library, N_A)
-        write_points(POINTS_FILENAME, P)
+        write_points(filename("points", config), P)
         (K, Q, V, A) = generate_specs(library, N_e, N_A)
         check_key_distances(K)
-        write_specs(SPECS_FILENAME, K, Q, V, A)
-        write_exams(EXAMS_FILENAME, library, K, Q, V, A, MINIMUM_EXAM_PAGES, ONE_PAGE_PER_QUESTION)
+        write_specs(filename("specs", config), K, Q, V, A)
+        write_exams(filename("exams", config), library, K, Q, V, A, MINIMUM_EXAM_PAGES, ONE_PAGE_PER_QUESTION)
         c = generate_solutions(Q, V, A, C)
-        write_solutions(SOLUTIONS_FILENAME, K, c)
-        write_full_solutions(FULL_SOLUTIONS_FILENAME, library, K, Q, V, A)
+        write_solutions(filename("solutions", config), K, c)
+        write_full_solutions(filename("full_solutions", config), library, K, Q, V, A)
     elif sys.argv[1] == "proc-scan":
-        init_logging(LOG_PROC_SCAN_FILENAME)
-        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
-        (K, Q, V, A) = read_specs(SPECS_FILENAME)
+        init_logging(filename("log_proc_scan", config))
+        log_and_print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
+        config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
+        (K, Q, V, A) = read_specs(filename("specs", config))
         N_Q = Q.shape[1]
-        (u, k, b) = read_scantrons(SCANTRON_FILENAME, N_e, N_Q, N_A)
+        (u, k, b) = read_scantrons(filename("scantron", config), N_e, N_Q, N_A)
         if CHECK_VALID_NETIDS:
-            netids = read_netids(NETIDS_FILENAME)
+            netids = read_netids(filename("netids", config))
             check_netids(u, netids)
         if CHECK_REPEATED_EXAM_KEYS:
             check_repeated_exam_keys(u, k)
-        write_answers(ANSWERS_FILENAME, u, k, b)
+        write_answers(filename("answers", config), u, k, b)
     elif sys.argv[1] == "proc-ans":
-        init_logging(LOG_PROC_ANS_FILENAME)
-        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
-        (K, Q, V, A) = read_specs(SPECS_FILENAME)
-        (u, k, b) = read_answers(ANSWERS_FILENAME)
-        library = read_library(LIBRARY_FILENAME)
+        init_logging(filename("log_proc_ans", config))
+        log_and_print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
+        config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
+        (K, Q, V, A) = read_specs(filename("specs", config))
+        (u, k, b) = read_answers(filename("answers", config))
+        library = read_library(filename("library", config))
         (P, C) = extract_points(library, N_A)
         c = generate_solutions(Q, V, A, C)
-        P = read_points(POINTS_FILENAME)
+        P = read_points(filename("points", config))
         d = generate_scores_and_statistics(RAW_STATS_PREFIX, P, K, Q, V, A, u, k, b, c)
-        write_scores(SCORES_FILENAME, u, d.P_s)
-        write_gradebook(GRADEBOOK_FILENAME, u, d.P_s)
-        write_statistics(STATS_FILENAME, TEST_NAME, d)
+        write_scores(filename("scores", config), u, d.P_s)
+        write_gradebook(filename("gradebook", config), u, d.P_s)
+        write_statistics(filename("stats", config), TEST_NAME, d)
     elif sys.argv[1] == "proc-feedback":
-        init_logging(LOG_PROC_FEEDBACK_FILENAME)
-        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
-        library = read_library(LIBRARY_FILENAME)
+        init_logging(filename("log_proc_feedback", config))
+        log_and_print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
+        config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
+        library = read_library(filename("library", config))
         (P, C) = extract_points(library, N_A)
-        (K, Q, V, A) = read_specs(SPECS_FILENAME)
-        (u, k, b) = read_answers(ANSWERS_FILENAME)
-        P = read_points(POINTS_FILENAME)
+        (K, Q, V, A) = read_specs(filename("specs", config))
+        (u, k, b) = read_answers(filename("answers", config))
+        P = read_points(filename("points", config))
         c = generate_solutions(Q, V, A, C)
         (e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
         generate_feedback(FEEDBACK_DIRECTORY, TEST_NAME, library, Q, V, A, u, k, b, e, P_sq, P_s, c)
     elif sys.argv[1] == "proc-email":
-        init_logging(LOG_PROC_EMAIL_FILENAME)
-        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
-        (u, k, b) = read_answers(ANSWERS_FILENAME)
+        init_logging(filename("log_proc_email", config))
+        log_and_print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
+        config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
+        (u, k, b) = read_answers(filename("answers", config))
         global MAIL_MSG_TXT
-        if os.path.isfile(MAIL_SIGNATURE_FILENAME):
-            with open(MAIL_SIGNATURE_FILENAME, "r") as in_f:
+        if os.path.isfile(filename("mail_signature", config)):
+            with open(filename("mail_signature", config), "r") as in_f:
                 MAIL_MSG_TXT += in_f.read();
         else:
-            log_and_print("No signature file found, filename: " + MAIL_SIGNATURE_FILENAME)
+            log_and_print("No signature file found, filename: " + filename("mail_signature", config))
         log("Email message text:")
         log(MAIL_MSG_TXT)
         send_email(FEEDBACK_DIRECTORY, RAWSCAN_DIRECTORY, MAIL_SERVER, MAIL_DOMAIN,
                    MAIL_MAX_SEND_RATE, MAIL_MAX_ATTEMPTS, MAIL_TIMEOUT, MAIL_RETRY_DELAY,
                    TEST_NAME, MAIL_MSG_TXT, u)
     elif sys.argv[1] == "proc-curve":
-        init_logging(LOG_PROC_CURVE_FILENAME)
-        print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
-        library = read_library(LIBRARY_FILENAME)
+        init_logging(filename("log_proc_curve", config))
+        log_and_print("randexam version %s (%s)" % (VERSION, RELEASE_DATE))
+        config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
+        library = read_library(filename("library", config))
         (P, C) = extract_points(library, N_A)
-        (u, P_s) = read_scores(SCORES_FILENAME)
+        (u, P_s) = read_scores(filename("scores", config))
         P_curve_s = curve_scores(P_s)
-        write_scores(CURVE_SCORES_FILENAME, u, P_curve_s)
-        write_gradebook(GRADEBOOK_FILENAME, u, P_curve_s)
+        write_scores(filename("curve_scores", config), u, P_curve_s)
+        write_gradebook(filename("gradebook", config), u, P_curve_s)
         d = Struct()
         d.N_s = len(P_s)
         d.P_s = P_s
         d.P_max = P.max(axis=2).max(axis=1).sum()
-        write_summary_statistics(CURVE_STATS_FILENAME, TEST_NAME, d)
+        write_summary_statistics(filename("curve_stats", config), TEST_NAME, d)
     else:
         print("ERROR: unrecognized command: %s" % sys.argv[1])
         print("valid commands are \"proc-lib\", \"proc-scan\", \"proc-ans\", \"proc-feedback\", or \"proc-email\"")
@@ -242,6 +273,60 @@ def log_array(arr, arr_name, dim_names):
         % (arr_name, ", ".join(["%s = %d" % (dim_names[i], arr.shape[i])
                                 for i in range(len(arr.shape))])))
     log(np.array_str(arr))
+
+######################################################################
+######################################################################
+
+def read_config(config_filename, default_config):
+    config_reader = configparser.SafeConfigParser()
+    log_and_print("Reading config file: %s" % config_filename)
+    try:
+        with open(config_filename) as config_f:
+            config.readfp(config_f)
+    except Exception as e:
+        die("ERROR: Unable to open config file for reading: %s: %s" % (config_filename, e))
+    if !config_reader.has_section("randexam"):
+        die("No [randexam] section found in config file: %s" % config_filename)
+    extra_sections = set(config_reader.sections()) - set(["randexam"])
+    for extra_section in extra_sections:
+        log_and_print("WARNING: unknown section %s found in config file %s, ignoring..." % (extra_section, config_filename))
+
+    config = {}
+    for (key, value) in default_config.items():
+        log("Determining config variable: %s (default value: %s)" % (key, value))
+        config[key] = value
+        if config_reader.has_option("randexam", key):
+            file_value = config_reader.get("randexam", key)
+            log("Read config file value: %s" % file_value)
+            if isinstance(value, int):
+                try:
+                    config[key] = config_reader.getint("randexam", key)
+                except Exception as e:
+                    die("Error reading config variable %s value %s as int" % (key, file_value))
+            elif isinstance(value, float):
+                try:
+                    config[key] = config_reader.getfloat("randexam", key)
+                except Exception as e:
+                    die("Error reading config variable %s value %s as float" % (key, file_value))
+            elif isinstance(value, bool):
+                try:
+                    config[key] = config_reader.getboolean("randexam", key)
+                except Exception as e:
+                    die("Error reading config variable %s value %s as boolean" % (key, file_value))
+            else:
+                config[key] = file_value
+            log("Set config variable %s to %s" % (key, config[key]))
+
+    extra_keys = set([key for (key, value) in config_reader.items("randexam")]) - set(default_config.keys())
+    for extra_key in extra_keys:
+        log_and_print("WARNING: unknown variable %s found in config file %s, ignoring..." % (extra_key, config_filename))
+    log("Successfully completed config file reading")
+    return config
+
+######################################################################
+######################################################################
+
+def filename(type, config):
 
 ######################################################################
 ######################################################################
@@ -390,7 +475,7 @@ def string2bubble(string):
 def bubble2string(bubble):
     """string = bubble2string(bubble)
 
-    Convert the bubble array b[N_A] to a string of all the bubbled answers.
+    Convert the bubble array bubble[:] to a string of all the bubbled answers.
     """
     s = ""
     for ind, b in enumerate(bubble):
@@ -401,7 +486,7 @@ def bubble2string(bubble):
 ######################################################################
 ######################################################################
 
-def read_library(input_filename):
+def read_library(input_filename, config):
     """library = read_library(input_filename)
 
     Reads the library.tex file and returns a tree of
@@ -577,7 +662,7 @@ def read_library(input_filename):
     log("Successfully completed library reading")
     return library
 
-def check_library(library):
+def check_library(library, config):
     """check_library(library)
 
     Check that the given Library object is valid, printing errors and
