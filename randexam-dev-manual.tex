@@ -264,6 +264,36 @@ shows that for variant 1 of question 2, answer D is worth 1
 point and all other answers are not worth any points, so
 $P(2,1,4) = 1.0$ and $P(2,1,A) = 0$ for $A \ne 4$.
 
+\subsection{\texttt{override.csv}}
+
+The override file encodes the array:
+\begin{center}
+  \begin{tabular}{llp{10.5cm}}
+    array & dimensions & description \\
+    \hline
+    $P^{\rm over}_{\rm sQ}$ & $N_{\rm s} \times N_{\rm Q}$
+    & override points awarded to student $s$ for library question $Q$
+    (or -1 to not override)
+  \end{tabular}
+\end{center}
+This is stored as a CSV file with the first column being the student
+NetID and subsequent columns specifying questions. The column header
+indicates the question number. It is not necessary to include all
+students or all questions, and any students or questions not specified
+will have entries of $-1$ in $P^{\rm over}_{\rm sQ}$, indicating that
+they should not be overridden. For example:
+\begin{verbatim}
+NetID,8,13
+RDEVILLE,0.4,7
+MWEST,0,-1
+\end{verbatim}
+Here two students have override scores specified for two
+questions. Student \texttt{RDEVILLE} will have a score of 0.4 for
+library question $Q = 8$ and $7$ for $Q = 13$. Student \texttt{MWEST}
+will have a score of zero for question $Q = 8$, but for question $Q =
+13$ his score will not be overridden, meaning it will be computed from
+the answer and points data as usual.
+
 \subsection{\texttt{solutions.csv}}
 
 This file gives the correct solutions for each exam in case grading by
@@ -426,7 +456,7 @@ This array is determined so that
 
 The points awarded to each student can be determined using the grading
 key for any exam, not just the particular exam that the student
-actually took. To make this clear, we consider the arrays
+actually took. To make this clear, we consider the arrays:
 \begin{center}
   \begin{tabular}{lll}
     array & dimensions & description \\
@@ -439,7 +469,7 @@ actually took. To make this clear, we consider the arrays
     & points award to student $s$ on question $q$ using the correct exam \\
     $P_{\rm s}(s)$ & $N_{\rm s}$
     & total points awarded to student $s$ scored using the correct exam \\
-    $P_{sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
+    $P_{\rm sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
     & points awarded to student $s$ for library question $Q$
   \end{tabular}
 \end{center}
@@ -447,15 +477,22 @@ We define an array for partial credit $\sigma(n)$ (the variable
 \verb+SCORE_PER_ANSWERS+ in \verb+randexam+) which is the score value
 multiplier when $n$ answers are selected (e.g., $\sigma(1)=1$ always,
 but $\sigma(n)=1/n$ can be used to award partial credit, or
-$\sigma(n)=0$ for $n>1$ will allow no partial credit). The arrays
-in the table above are computed by:
+$\sigma(n)=0$ for $n>1$ will allow no partial credit). The first array
+in the table above is computed by:
+\begin{equation}
+  P_{\rm seq}(s,e,q) = \begin{cases}
+    \displaystyle \sum_{a=1}^{N_{\rm A}} P\Big(Q(e,q), V(e,q), A(e,q,a)\Big)
+    b(s,q,a) \sigma\Bigg(\sum_{a'=1}^{N_{\rm A}} b(s,q,a')\Bigg)
+    & \text{if } P^{\rm over}_{\rm sQ}\big(s,Q(e,q)\big) < 0 \\
+    P^{\rm over}_{\rm sQ}\big(s,Q(e,q)\big) & \text{otherwise}
+  \end{cases}
+\end{equation}
+The subsequent arrays in the table above are then computed by:
 \begin{align}
-  P_{\rm seq}(s,e,q) &= \sum_{a=1}^{N_{\rm A}} P\Big(Q(e,q), V(e,q), A(e,q,a)\Big)
-  b(s,q,a) \sigma\Bigg(\sum_{a'=1}^{N_{\rm A}} b(s,q,a')\Bigg) \\
-  P_{\rm se}(s,e) &= \sum_{q = 1}^{N_{\rm Q}} P_{\rm seq}(s,e,q) \\
-  P_{\rm sq}(s,q) &= P_{\rm seq}(s,e(s),q) \\
-  P_{\rm s}(s) &= P_{\rm se}(s,e(s)) \\
-  P_{\rm sQ}(s,Q(e(s),q)) &= P_{\rm seq}(s,e(s),q).
+  P_{\rm se}(s,e) &= \sum_{q = 1}^{N_{\rm Q}} P_{\rm seq}(s,e,q) \displaybreak[0] \\
+  P_{\rm sq}(s,q) &= P_{\rm seq}\big(s,e(s),q\big) \displaybreak[0] \\
+  P_{\rm s}(s) &= P_{\rm se}\big(s,e(s)\big) \displaybreak[0] \\
+  P_{\rm sQ}\Big(s,Q\big(e(s),q\big)\Big) &= P_{\rm seq}\big(s,e(s),q\big).
 \end{align}
 We expect that $e(s)$ maximizes $P_{\rm se}(s,e)$ for each $s$, as
 grading with the ``wrong'' exam key should give random choices for

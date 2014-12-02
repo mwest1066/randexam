@@ -4,8 +4,9 @@ digraph partmc_modules {
     graph [nodesep = 0.2, ranksep = 0.3];
     edge [arrowsize = 0.7];
 
-    library [label="library.tex", fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
-    scantron [label="scantron.dat", fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
+    library [label="library.tex", fixedsize=true, width=1.3, height=0.5, fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
+    scantron [label="scantron.dat", fixedsize=true, width=1.3, height=0.5, fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
+    override [label="override.csv", fixedsize=true, width=1.3, height=0.5, fontname=Courier, shape=invhouse, style=filled, fillcolor=honeydew1];
 
     students [label="students, Scantron", shape=hexagon, style=filled, fillcolor=mistyrose1];
 
@@ -28,6 +29,6 @@ digraph partmc_modules {
     students -> scantron
     { scantron; specs } -> proc_scan
     proc_scan -> answers
-    { specs ; answers; points } -> proc_ans
+    { specs ; answers; points; override } -> proc_ans
     proc_ans -> { scores; stats; statsdata }
 }

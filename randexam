@@ -141,7 +141,8 @@ def main():
         (P, C) = extract_points(library, N_A)
         c = generate_solutions(Q, V, A, C)
         P = read_points(config["points_filename"])
-        d = generate_scores_and_statistics(config["raw_stats_prefix"], P, K, Q, V, A, u, k, b, c, config)
+        P_over = read_override(config["override_filename"], u, N_Q)
+        d = generate_scores_and_statistics(config["raw_stats_prefix"], P_over, P, K, Q, V, A, u, k, b, c, config)
         write_scores(config["scores_filename"], u, d.P_curve_s)
         write_gradebook(config["gradebook_filename"], u, d.P_curve_s)
         write_statistics(config["stats_filename"], d, config)
@@ -153,7 +154,7 @@ def main():
         (u, k, b) = read_answers(config["answers_filename"], N_A)
         P = read_points(config["points_filename"])
         c = generate_solutions(Q, V, A, C)
-        (e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P, K, Q, V, A, u, k, b, config)
+        (e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P_over, P, K, Q, V, A, u, k, b, config)
         generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, config)
     elif command == "proc-email":
         (K, Q, V, A) = read_specs(config["specs_filename"])
@@ -258,6 +259,7 @@ def read_config(config_filename, default_config):
     config["library_filename"] = prefix + "library.tex"
     config["scantron_filename"] = prefix + "scantron.dat"
     config["netids_filename"] = prefix + "netids.txt"
+    config["override_filename"] = prefix + "override.csv"
 
     # output filenames
     config["exams_filename"] = prefix + "exams.tex"
@@ -751,6 +753,88 @@ def read_points(input_filename):
     log_array(P, "P", ["N_Q", "N_V", "N_A"])
     log("Successfully completed reading points data")
     return P
+
+######################################################################
+######################################################################
+
+def read_override(input_filename, u, N_Q):
+    """P_over = read_override(input_filename, u, N_Q)
+
+    Read the override points array P_over from the override.csv file.
+    """
+    N_s = u.shape[0]
+    P_over = np.full((N_s, N_Q), -1, dtype=float)
+    if not os.path.exists(input_filename):
+        log_and_print("Override points file not found, skipping: %s" % input_filename)
+        return P_over
+
+    log_and_print("Reading override points data from file: %s" % input_filename)
+    P_over_data = {}
+    with open(input_filename, "r") as in_f:
+        reader = csv.reader(in_f)
+        for (i_row, row) in enumerate(reader):
+            if i_row == 0:
+                if len(row) < 1:
+                    die("%s:%d: ERROR: first row must have at least one entry"
+                        % (input_filename, i_row + 1))
+                if row[0].upper() != "NETID":
+                    die("%s:%d: ERROR: first entry in the first row must be \"NetID\", not: %s"
+                        % (input_filename, i_row + 1, row[0]))
+                Q_over = np.zeros(len(row) - 1, dtype=int)
+                for (i_col, entry) in enumerate(row[1:]):
+                    try:
+                        Q_over[i_col] = int(entry) - 1
+                    except Exception as e:
+                        die("%s:%d: ERROR: column %d header cannot be read as question number: %s"
+                            % (input_filename, i_row + 1, i_col + 2, entry))
+                    if Q_over[i_col] < 0:
+                        die("%s:%d: ERROR: column %d header %d is less than 1"
+                            % (input_filename, i_row + 1, i_col + 2, Q_over[i_col] + 1))
+                    if Q_over[i_col] >= N_Q:
+                        die("%s:%d: ERROR: column %d header %d is larger than the number of questions %d"
+                            % (input_filename, i_row + 1, i_col + 2, Q_over[i_col] + 1, N_Q))
+            else:
+                if len(row) != len(Q_over) + 1:
+                    die("%s:%d: ERROR: expected %d entries in row, not %d"
+                        % (input_filename, i_row + 1, len(Q_over) + 1, len(row)))
+                netid = row[0].upper()
+                P_row = np.zeros(len(Q_over), dtype=float)
+                for (i_col, entry) in enumerate(row[1:]):
+                    try:
+                        P_row[i_col] = float(entry)
+                    except Exception as e:
+                        die("%s:%d: ERROR: column %d cannot be read as a floating-point number: %s"
+                            % (input_filename, i_row + 1, i_col + 2, entry))
+                P_over_data[netid] = P_row
+
+    u_netids = set(u[:,3])
+    override_netids = set(P_over_data.keys())
+
+    override_not_u = override_netids - u_netids
+    if len(override_not_u) > 20:
+        log_and_print("WARNING: %d unknown students listed in override file %s (too many NetIDs to list)"
+                      % (len(override_not_u), input_filename))
+    elif len(override_not_u) > 0:
+        log_and_print("WARNING: unknown students listed in override file %s: "
+                      % (input_filename, ", ".join(override_not_u)))
+                    
+    u_not_override = u_netids - override_netids
+    if len(u_not_override) > 20:
+        log_and_print("WARNING: %d students not listed in override file %s (too many NetIDs to list)"
+                      % (len(u_not_override), input_filename))
+    elif len(u_not_override) > 0:
+        log_and_print("WARNING: students not listed in override file %s: "
+                      % (input_filename, ", ".join(u_not_override)))
+
+    for si in range(N_s):
+        if u[si,3] in P_over_data:
+            P_row = P_over_data[u[si,3]]
+            for (j, val) in enumerate(P_row):
+                P_over[si,Q_over[j]] = val
+                     
+    log_array(P_over, "P_over", ["N_s", "N_Q"])
+    log("Successfully completed reading override points data")
+    return P_over
 
 ######################################################################
 ######################################################################
@@ -1347,7 +1431,7 @@ def keys_to_exams(K, k, u):
                 best_string = "best match is %s (Hamming distance %d)" % (best_matches[0], min_d)
             elif len(best_matches) <= 5:
                 best_string = "best matches are %s (all at Hamming distance %d)" \
-                    % (",".join(best_matches), min_d)
+                    % (", ".join(best_matches), min_d)
             else:
                 best_string = "too many equivalently best matches to display"
             log_and_print("WARNING: key '%s' for student %s/%s/%s/%s not found: %s"
@@ -1356,8 +1440,8 @@ def keys_to_exams(K, k, u):
     log("Successfully completed matching keys to exams")
     return e
 
-def generate_scores(P, K, Q, V, A, u, k, b, config):
-    """(e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P, K, Q, V, A, u, k, b, config)
+def generate_scores(P_over, P, K, Q, V, A, u, k, b, config):
+    """(e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P_over, P, K, Q, V, A, u, k, b, config)
 
     Generate the score arrays from the exam specifications and the
     student answer data.
@@ -1373,13 +1457,16 @@ def generate_scores(P, K, Q, V, A, u, k, b, config):
     for si in range(N_s):
         for ei in range(N_e):
             for qi in range(N_Q):
-                for ai in range(N_A):
-                    if b[si,qi,ai]:
-                        Ai = chr2ind(A[ei,qi,ai])
-                        Qi = Q[ei,qi]
-                        Vi = V[ei,qi]
-                        if Ai >= 0 and Qi >= 0 and Vi >= 0:
-                            P_seq[si,ei,qi] += P[Qi,Vi,Ai]*SCORE_PER_ANSWERS[sum(b[si,qi,:])]
+                Qi = Q[ei,qi]
+                if P_over[si,Qi] >= 0:
+                    P_seq[si,ei,qi] = P_over[si,Qi]
+                else:
+                    for ai in range(N_A):
+                        if b[si,qi,ai]:
+                            Ai = chr2ind(A[ei,qi,ai])
+                            Vi = V[ei,qi]
+                            if Ai >= 0 and Qi >= 0 and Vi >= 0:
+                                P_seq[si,ei,qi] += P[Qi,Vi,Ai]*SCORE_PER_ANSWERS[sum(b[si,qi,:])]
     P_se = P_seq.sum(axis=2)
     
     P_sq = np.zeros((N_s, N_Q))
@@ -1517,8 +1604,8 @@ def write_halfviz(output_filename, data, threshold):
                     out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
     log("Successfully completed writing graph file")
 
-def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c, config):
-    """d = generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c, config)
+def generate_scores_and_statistics(output_prefix, P_over, P, K, Q, V, A, u, k, b, c, config):
+    """d = generate_scores_and_statistics(output_prefix, P_over, P, K, Q, V, A, u, k, b, c, config)
 
     d is a structure containing all data arrays and all generated
     statistics arrays.
@@ -1533,6 +1620,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c, con
     d.N_e = K.shape[0]
     d.N_s = u.shape[0]
 
+    d.P_over = P_over
     d.P = P
     d.K = K
     d.Q = Q
@@ -1542,7 +1630,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c, con
     d.k = k
     d.b = b
     d.c = c
-    (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ, d.P_curve_s) = generate_scores(P, K, Q, V, A, u, k, b, config)
+    (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ, d.P_curve_s) = generate_scores(P_over, P, K, Q, V, A, u, k, b, config)
 
     write_csv(output_prefix + "_P_seq.csv", ["s", "e", "P_seq(s,e,q=%d)"], d.P_seq)
     write_csv(output_prefix + "_P_se.csv", ["s", "P_se(s,e=%d)"], d.P_se)
