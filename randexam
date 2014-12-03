@@ -1791,7 +1791,7 @@ def generate_scores_and_statistics(output_prefix, P_over, P, K, Q, V, A, u, k, b
 
     d.r_P_Q = np.zeros(d.N_Q)
     for Qi in range(d.N_Q):
-        d.r_P_Q[Qi] = np.corrcoef(d.P_sQ[:,Qi], d.P_s)[0,1]
+        d.r_P_Q[Qi] = np.corrcoef(d.P_sQ[:,Qi], d.P_s - d.P_sQ[:,Qi])[0,1]
     write_csv(output_prefix + "_r_P_Q.csv", ["Q", "r_P(Q)"], d.r_P_Q)
 
     r_P_Q_threshold = 0.05

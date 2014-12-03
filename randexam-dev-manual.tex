@@ -621,9 +621,9 @@ variants. Basic statistics for this assessment are listed below.
     $r^{\rm ai}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
     & proportion of identical incorrect answers for students $s$ and $\hat{s}$ \\
     $D_{\rm Q}(Q)$ & $N_{\rm Q}$
-    & ``difficulty'' of question $Q$ (one minus normalized averaged points $\hat{P}_{\rm Q}(Q)$) \\
+    & ``difficulty'' of question $Q$: one minus normalized averaged points $\hat{P}_{\rm Q}(Q)$ \\
     $r^{\rm P}_{\rm Q}(Q)$ & $N_{\rm Q}$
-    & ``discrimination'' of question $Q$ (correlation coefficient of $P_{\rm s}(s)$ and $P_{\rm sQ}(s,Q)$) \\
+    & ``discrimination'' of question $Q$: correlation coefficient of $P_{\rm sQ}(s,Q)$ and $\big(P_{\rm s}(s) - P_{\rm sQ}(s,Q)\big)$ \\
     $q_{\rm sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
     & exam question number $q$ in which library question $Q$ appears for student $s$ \\
     $V_{\rm sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
@@ -677,11 +677,11 @@ These quantities are computed by:
   \delta\big(a(s,q), a(\hat{s},q)\big)
   \ \delta\big(0, P_{\rm sq}(s,q)\big) \ \delta\big(0, P_{\rm sq}(\hat{s},q)\big) \displaybreak[0] \\
   D_{\rm Q}(Q) &= 1 - \hat{P}_{\rm Q}(Q) \displaybreak[0] \\
-  r^{\rm P}_{\rm Q}(Q) &= \frac{\sum_{s=1}^{N_{\rm s}}
-    (P_{sQ}(s,Q) - \bar{P}_Q(Q)) (P_{s}(s) - \bar{P})
+  r^{\rm P}_{\rm Q}(Q) &= \frac{\displaystyle \sum_{s=1}^{N_{\rm s}}
+    \Big(P_{sQ}(s,Q) - \bar{P}_Q(Q)\Big) \Big(\big(P_{s}(s) - P_{sQ}(s,Q)\big) - \big(\bar{P} - \bar{P}_Q(Q)\big)\Big)
   }{
-    \sqrt{\sum_{s=1}^{N_{\rm s}} (P_{sQ}(s,Q) - \bar{P}_Q(Q))^2}
-    \sqrt{\sum_{s=1}^{N_{\rm s}} (P_{s}(s) - \bar{P})^2}} \displaybreak[0] \\
+    \sqrt{\displaystyle \sum_{s=1}^{N_{\rm s}} \Big(P_{sQ}(s,Q) - \bar{P}_Q(Q)\Big)^2}
+    \sqrt{\displaystyle \sum_{s=1}^{N_{\rm s}} \Big(\big(P_{s}(s) - P_{sQ}(s,Q)\big) - \big(\bar{P} - \bar{P}_Q(Q)\big)\Big)^2}} \displaybreak[0] \\
   q_{\rm sQ}(s,\hat{Q}) &= \sum_{q = 1}^{N_{\rm Q}} \delta\Big(\hat{Q},Q\big(e(s),q\big)\Big) q
   \hspace{2em} \Longrightarrow \hspace{2em} Q\big(e(s), q_{\rm sQ}(s,\hat{Q})\big) = \hat{Q} \displaybreak[0] \\
   V_{\rm sQ}(s,Q) &= V\big(e(s), q_{\rm sQ}(s,Q)\big) \\
