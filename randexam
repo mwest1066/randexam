@@ -2124,6 +2124,42 @@ def write_stats_tex_question_summary_scatter(out_f, d, config):
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
+def write_stats_tex_question_summary_correlation(out_f, d):
+    out_f.write(r"\begin{tikzpicture}" + "\n")
+    out_f.write(r"\begin{axis}[" + "\n")
+    out_f.write(r"view={0}{90}," + "\n")
+    out_f.write(r"width=14cm," + "\n")
+    out_f.write(r"axis equal image," + "\n")
+    out_f.write(r"xlabel={question number $Q_1$}," + "\n")
+    out_f.write(r"ylabel={question number $Q_2$}," + "\n")
+    out_f.write(r"colorbar," + "\n")
+    out_f.write(r"x tick label as interval," + "\n")
+    out_f.write(r"y tick label as interval," + "\n")
+    out_f.write(r"xtick=data," + "\n")
+    out_f.write(r"ytick=data," + "\n")
+    out_f.write(r"colorbar style={" + "\n")
+    out_f.write(r"  ylabel={correlation coeff. $r^{\rm s}_{QQ}(Q_1,Q_2)$}," + "\n")
+    out_f.write(r"  every axis y label/.style=" + "\n")
+    out_f.write(r"  {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel}," + "\n")
+    out_f.write(r"  }," + "\n")
+    out_f.write(r"]" + "\n")
+
+    out_f.write(r"\addplot3[surf,shader=flat corner,draw=black] coordinates {" + "\n")
+    lines = []
+    for Qi in range(d.N_Q + 1):
+        line = []
+        for Qj in range(d.N_Q + 1):
+            line.append(r"(%g,%g,%g)"
+                        % (Qj + 1, Qi + 1,
+                           d.r_s_QQ[Qi,Qj] if Qi != Qj and Qi < d.N_Q and Qj < d.N_Q else 0))
+        lines.append(" ".join(line))
+    out_f.write("\n\n".join(lines))
+    out_f.write(r"};" + "\n")
+
+    out_f.write(r"\end{axis}" + "\n")
+    out_f.write(r"\end{tikzpicture}" + "\n")
+    out_f.write("\n")
+
 def write_stats_tex_question_answers(out_f, d, config):
     for Qi in range(d.N_Q):
         out_f.write(r"\vspace{1cm}" + "\n")
@@ -2283,6 +2319,21 @@ def write_statistics(output_filename, d, config):
         out_f.write(r"\vspace{2em}" + "\n")
         out_f.write("\n")
         write_stats_tex_question_summary_scatter(out_f, d, config)
+
+        out_f.write("\n")
+        out_f.write(r"\clearpage" + "\n")
+        out_f.write("\n")
+
+        out_f.write(r"The plot below shows the correlation coefficient $r^{\rm s}_{\rm QQ}$" + "\n")
+        out_f.write(r"of student scores on different questions. Positive correlations are" + "\n")
+        out_f.write(r"shown in red colors, and negative correlations in blue. Gray color" + "\n")
+        out_f.write(r"indicates uncorrelated questions. Each question correlates perfectly" + "\n")
+        out_f.write(r"with itself ($r = 1$), but self-correlations are plotted as $r = 0$ to" + "\n")
+        out_f.write(r"improve the colorbar range." + "\n")
+        out_f.write("\n")
+        out_f.write(r"\vspace{2em}" + "\n")
+        out_f.write("\n")
+        write_stats_tex_question_summary_correlation(out_f, d)
 
         out_f.write("\n")
         out_f.write(r"\clearpage" + "\n")
