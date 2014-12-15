@@ -122,6 +122,29 @@ random guessing). In practice this has never occurred.
 \item Variants are not required to have any answers. This is useful
   for including questions that the students must answer via some other
   means, such as a long-form written answer.
+\item Using PGFPlots for graphics (based on PGF/TikZ) can result in
+  very long compile times and errors like \texttt{TeX capacity
+    exceeded, sorry}. To avoid this, use the PGFPlots
+  \texttt{external} library. To do this:
+  \begin{enumerate}
+  \item Include the following lines in the library file preamble:
+\begin{verbatim}
+\usepgfplotslibrary{external}
+\tikzexternalize
+\end{verbatim}
+  \item Use \verb+\tikzsetnextfilename+ to assign a unique filename for
+    each \texttt{tikzpicture}, such as:
+\begin{verbatim}
+\tikzsetnextfilename{tikz_figname}
+\begin{tikzpicture}
+...
+\end{tikzpicture}
+\end{verbatim}
+  \item Generate library and exam PDFs with:
+\begin{verbatim}
+pdflatex -shell-escape filename.tex
+\end{verbatim}
+  \end{enumerate}
 \end{enumerate}
 
 \section{Configuration Options}
