@@ -23,10 +23,12 @@ if sys.version_info[0] < 3 and sys.version_info[1] < 7:
 elif sys.version_info[0] < 3:
     # Python 2.x
     CSV_WRITER_ARGS = {"mode": "wb"}
+    INPUT_FUNC = raw_input
     import ConfigParser as configparser
 else:
     # Python 3.x
     CSV_WRITER_ARGS = {"mode": "w", "newline": ""}
+    INPUT_FUNC = input
     import configparser
 
 ######################################################################
@@ -146,7 +148,9 @@ def main():
         (e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
         generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, c, config)
     elif command == "proc-email":
-        (u, k, b) = read_answers(config["answers_filename"])
+        (K, Q, V, A) = read_specs(config["specs_filename"])
+        (N_e, N_Q, N_A) = A.shape
+        (u, k, b) = read_answers(config["answers_filename"], N_A)
         send_email(u, config)
     elif command == "proc-curve":
         library = read_library(config["library_filename"], config)
@@ -2267,7 +2271,7 @@ def send_email(u, config):
     N_s = u.shape[0]
 
     print("WARNING: email sending will only work correctly from within the %s domain" % config["mail_domain"])
-    sending_netid = raw_input("NetID of sending user: ")
+    sending_netid = INPUT_FUNC("NetID of sending user: ")
     sending_password = getpass.getpass("Active Directory password: ")
     from_address = sending_netid + "@" + config["mail_domain"]
 
