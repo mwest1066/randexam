@@ -2258,8 +2258,9 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, c, config):
         output_filename = os.path.join(config["feedback_directory"], output_basename)
         with open(os.devnull, "w") as out_null:
             with open(os.devnull, "r") as in_null:
-                if subprocess.call(["pdflatex", "-output-directory=" + config["feedback_directory"], output_filename],
-                                   stdin=in_null, stdout=out_null, stderr=out_null):
+                cmd = ["pdflatex", "-output-directory=" + config["feedback_directory"], output_filename]
+                log_and_print("Running command: %s" % " ".join(cmd))
+                if subprocess.call(cmd, stdin=in_null, stdout=out_null, stderr=out_null):
                     log_and_print("ERROR: pdflatex failed for %s" % output_basename)
 
     log("Successfully completed writing feedback files")
