@@ -2279,11 +2279,11 @@ def send_email(u, config):
 
     subject_line = config["exam_title"] + " results"
     msg_txt = config["mail_message_text"]
-    if os.path.isfile(config["mail_signature_filename"]):
-        with open(config["mail_signature_filename"], "r") as in_f:
+    if os.path.isfile(config["mail_signature_file"]):
+        with open(config["mail_signature_file"], "r") as in_f:
             msg_txt += in_f.read();
     else:
-        log_and_print("Signature file not found: " + config["mail_signature_filename"])
+        log_and_print("Signature file not found: " + config["mail_signature_file"])
     log("Email message text: %s" % msg_txt)
 
     log_and_print("Sending mail from: %s" % from_address)
