@@ -1793,7 +1793,7 @@ def curve_scores(P_s):
 
     max_score = 100
 
-    old_median = numpy.median(P_s)
+    old_median = np.median(P_s)
     new_median = 80
 
     new_zero = 20 # only used for the piecewise variant below
