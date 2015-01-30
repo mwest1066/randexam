@@ -1,9 +1,9 @@
 
-VERSION = 1.10.0
-RELEASE_DATE = 2014-11-19
+VERSION = 1.11.0
+RELEASE_DATE = 2015-01-29
 RELEASE_NAME = randexam-$(VERSION)
 
-RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam-user-manual.tex randexam-user-manual.pdf randexam-dev-manual.tex randexam-dev-manual.pdf library.tex scantron.dat netids.txt pipeline.gv statemachine.gv
+RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam-user-manual.tex randexam-user-manual.pdf randexam-dev-manual.tex randexam-dev-manual.pdf config.ini course_sem_exam1_library.tex course_sem_exam1_scantron.dat course_sem_exam1_netids.txt pipeline.gv statemachine.gv
 
 .PHONY: all release
 all: randexam-user-manual.pdf randexam-dev-manual.pdf
@@ -26,6 +26,8 @@ $(RELEASE_NAME).tar.gz: randexam-user-manual.pdf randexam-dev-manual.pdf
 
 randexam-dev-manual.pdf: pipeline.pdf statemachine.pdf
 
+randexam-user-manual.pdf: pipeline.pdf
+
 %.pdf: %.tex
 	pdflatex $<
 	pdflatex $<
@@ -40,4 +42,4 @@ randexam-dev-manual.pdf: pipeline.pdf statemachine.pdf
 	epstopdf $<
 
 clean:
-	rm -rf pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam-user-manual.{pdf,aux,log,synctex.gz} randexam-dev-manual.{pdf,aux,log,synctex.gz} stats_*.{csv,halfviz} {points,specs,scores,solutions,answers,grades,gradebook}.csv {full_solutions,exams,stats}.{tex,pdf,aux,log,synctex.gz} library.{pdf,aux,log,synctex.gz} proc_{lib,scan,ans,email,feedback,curve}.log feedback
+	rm -rf pipeline.{pdf,png,eps} statemachine.{pdf,png,eps} randexam-user-manual.{pdf,aux,log,out,synctex.gz} randexam-dev-manual.{pdf,aux,log,out,synctex.gz} course_sem_exam1_stats_*.{csv,halfviz} course_sem_exam1_{points,specs,scores,solutions,answers,grades,gradebook}.csv course_sem_exam1_{full_solutions,exams,stats}.{tex,pdf,aux,log,synctex.gz} course_sem_exam1_library.{pdf,aux,log,synctex.gz} proc-{lib,scan,ans,email,feedback,curve}.log feedback
