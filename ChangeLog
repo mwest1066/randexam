@@ -1,5 +1,5 @@
 
-1.11.0 - XXXX-XX-XX
+1.11.0 - 2015-01-29
 
   * Significantly expand the `randexam-user-manual`.
 
@@ -7,6 +7,12 @@
     the maximum score and median values.
 
   * Add output of `q_sQ`, `V_sQ`, and `c_sQ` arrays.
+
+  * Add Python 3.x compatibility.
+
+  * Change to specifying options in `config.ini` file.
+
+  * Remove the need to copy figures into the feedback directory.
 
 1.10.0 - 2014-11-19
 
