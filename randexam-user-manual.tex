@@ -239,6 +239,21 @@ exams. Random numbers are only generated during \texttt{randexam
 randomized exam generation, assuming the same version of Python on the
 same computer.
 
+\hangindent=1cm \texttt{randomize_answers} (default: \texttt{Yes}) If
+\texttt{Yes} then choose answer order randomly, otherwise leave
+answers in the library order.
+
+\hangindent=1cm \texttt{randomize_questions} (default: \texttt{Yes})
+If \texttt{Yes}, then choose the question order randomly within zones,
+otherwise leave questions in the library order.
+
+\hangindent=1cm \texttt{randomize_variants} (default: \texttt{Yes}) If
+\texttt{Yes}, then choose question variants randomly. If \texttt{No},
+then choose question variants in order, so exam 1 has variant 1 of
+each question, exam 2 has variant 2 of each question, etc. After
+exhausting all variants of a question, the selection will cycle back
+to variant 1.
+
 \hangindent=1cm \texttt{raw_scan_directory} (default: \emph{blank})
 Directory name where image scans of the Scantrons forms are stored. If
 blank, then these are ignored. If non-blank, these scans are attached

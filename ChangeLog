@@ -1,4 +1,12 @@
 
+1.12.0 - XXXX-XX-XX
+
+  * Fix boolean variable bug in `config.ini`.
+
+  * Add `randomize_answers`, `randomize_questions`, and
+    `randomize_variants` config options to allow selective disabling
+    of randomization.
+
 1.11.0 - 2015-01-29
 
   * Significantly expand the `randexam-user-manual`.

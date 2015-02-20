@@ -60,6 +60,9 @@ DEFAULT_CONFIG = {
     "number_of_exams": 1,
     "one_page_per_question": False,
     "random_seed": 7,
+    "randomize_answers": True,
+    "randomize_questions": True,
+    "randomize_variants": True,
     "raw_scan_directory": "",
 }
 
@@ -108,7 +111,7 @@ def main():
         N_e = config["number_of_exams"]
         (P, C) = extract_points(library, N_A)
         write_points(config["points_filename"], P)
-        (K, Q, V, A) = generate_specs(library, N_e, N_A)
+        (K, Q, V, A) = generate_specs(library, N_e, N_A, config)
         check_key_distances(K)
         write_specs(config["specs_filename"], K, Q, V, A)
         write_exams(config["exams_filename"], library, K, Q, V, A, config)
@@ -762,8 +765,8 @@ def read_points(input_filename):
 ######################################################################
 ######################################################################
 
-def generate_specs(library, N_e, N_A):
-    """(K, Q, V, A) = generate_specs(library, N_e, N_A)
+def generate_specs(library, N_e, N_A, options):
+    """(K, Q, V, A) = generate_specs(library, N_e, N_A, options)
 
     K[e] = exam key
     Q[e,q] = library question number for exam e, question q
@@ -789,7 +792,8 @@ def generate_specs(library, N_e, N_A):
         Qi = 0
         for (i_zone, zone) in enumerate(library.zones):
             q_zone = list(range(Qi, (Qi + len(zone.questions))))
-            random.shuffle(q_zone)
+            if options["randomize_questions"]:
+                random.shuffle(q_zone)
             q_list.extend(q_zone)
             Qi += len(zone.questions)
         Q[ei,:] = np.array(q_list)
@@ -797,9 +801,13 @@ def generate_specs(library, N_e, N_A):
         # choose random variant for each question and randomize answer order
         for qi in range(N_Q):
             question = flat_questions[Q[ei,qi]]
-            V[ei,qi] = random.randrange(len(question.variants))
+            if options["randomize_variants"]:
+                V[ei,qi] = random.randrange(len(question.variants))
+            else:
+                V[ei,qi] = ei % len(question.variants)
             a_list = list(range(len(question.variants[V[ei,qi]].answers)))
-            random.shuffle(a_list)
+            if options["randomize_answers"]:
+                random.shuffle(a_list)
             A[ei,qi,:] = "*"
             for (ai, Ai) in enumerate(a_list):
                 A[ei,qi,ai] = ind2chr(Ai)
