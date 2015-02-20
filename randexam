@@ -232,21 +232,21 @@ def read_config(config_filename, default_config):
         if config_reader.has_option("randexam", key):
             file_value = config_reader.get("randexam", key)
             log("Read config file value: %s" % file_value)
-            if isinstance(value, int):
+            if isinstance(value, bool):
                 try:
-                    config[key] = config_reader.getint("randexam", key)
+                    config[key] = config_reader.getboolean("randexam", key)
                 except Exception as e:
-                    die("Error reading config variable %s value %s as int" % (key, file_value))
+                    die("Error reading config variable %s value %s as boolean" % (key, file_value))
             elif isinstance(value, float):
                 try:
                     config[key] = config_reader.getfloat("randexam", key)
                 except Exception as e:
                     die("Error reading config variable %s value %s as float" % (key, file_value))
-            elif isinstance(value, bool):
+            elif isinstance(value, int):
                 try:
-                    config[key] = config_reader.getboolean("randexam", key)
+                    config[key] = config_reader.getint("randexam", key)
                 except Exception as e:
-                    die("Error reading config variable %s value %s as boolean" % (key, file_value))
+                    die("Error reading config variable %s value %s as int" % (key, file_value))
             else:
                 config[key] = file_value
             log("Set config variable %s to %s" % (key, config[key]))
