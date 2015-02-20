@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
     "check_repeated_exam_keys": True,
     "check_valid_netids": True,
     "exam_title": "Exam",
+    "feedback_directory": "feedback",
     "filename_prefix": "",
     "last_scantron_question_number": 96,
     "mail_domain": "illinois.edu",
@@ -59,7 +60,6 @@ DEFAULT_CONFIG = {
     "number_of_exams": 1,
     "one_page_per_question": False,
     "random_seed": 7,
-    "feedback_directory": "feedback",
     "raw_scan_directory": "",
 }
 

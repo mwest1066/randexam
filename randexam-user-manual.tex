@@ -165,6 +165,9 @@ Check whether all students taking the exam have NetIDs listed in the
 \hangindent=1cm \texttt{exam_title} (default: \texttt{Exam}) Title of
 the exam (used in statistics reports).
 
+\hangindent=1cm \texttt{feedback_directory} (default:
+\texttt{feedback}) Directory name where feedback PDFs are stored.
+
 \hangindent=1cm \texttt{filename_prefix} (default: \emph{blank})
 Prefix to append to all input and output filenames. This is the
 \texttt{XXX} in filenames like \texttt{XXX_library.tex}.  The
@@ -235,9 +238,6 @@ exams. Random numbers are only generated during \texttt{randexam
   proc-lib}. The same value of random_seed will result in the same
 randomized exam generation, assuming the same version of Python on the
 same computer.
-
-\hangindent=1cm \texttt{feedback_directory} (default:
-\texttt{feedback}) Directory name where feedback PDFs are stored.
 
 \hangindent=1cm \texttt{raw_scan_directory} (default: \emph{blank})
 Directory name where image scans of the Scantrons forms are stored. If
