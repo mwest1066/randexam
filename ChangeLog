@@ -7,6 +7,8 @@
     `randomize_variants` config options to allow selective disabling
     of randomization.
 
+  * Fix statistics display for multiple answers (Dallas Trinkle).
+
 1.11.0 - 2015-01-29
 
   * Significantly expand the `randexam-user-manual`.
