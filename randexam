@@ -1913,7 +1913,7 @@ def tex_write_cdf(out_f, d):
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write(r"\end{center}" + "\n")
 
-def write_stats_tex_question_summary(out_f, d):
+def write_stats_tex_question_summary(out_f, d, config):
     out_f.write(r"\begin{tikzpicture}" + "\n")
     out_f.write(r"\begin{axis}[" + "\n")
     out_f.write(r"ybar, ymin=0," + "\n")
@@ -1944,7 +1944,7 @@ def write_stats_tex_question_summary(out_f, d):
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
-def write_stats_tex_variant_summary(out_f, d):
+def write_stats_tex_variant_summary(out_f, d, config):
     out_f.write(r"\begin{tikzpicture}" + "\n")
     out_f.write(r"\begin{axis}[" + "\n")
     out_f.write(r"xmin=1, xmax=%d," % d.N_Q + "\n")
@@ -1977,7 +1977,7 @@ def write_stats_tex_variant_summary(out_f, d):
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
-def write_stats_tex_question_summary_scatter(out_f, d):
+def write_stats_tex_question_summary_scatter(out_f, d, config):
     out_f.write(r"\begin{tikzpicture}" + "\n")
     out_f.write(r"\begin{axis}[" + "\n")
     out_f.write(r"xmin=0, ymin=0," + "\n")
@@ -2002,7 +2002,7 @@ def write_stats_tex_question_summary_scatter(out_f, d):
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write("\n")
 
-def write_stats_tex_question_answers(out_f, d):
+def write_stats_tex_question_answers(out_f, d, config):
     for Qi in range(d.N_Q):
         out_f.write(r"\vspace{1cm}" + "\n")
         out_f.write(r"\noindent" + "\n")
@@ -2016,13 +2016,20 @@ def write_stats_tex_question_answers(out_f, d):
         out_f.write(r"width=%gcm, height=4cm," % width + "\n")
         out_f.write(r"xlabel={answer $A$}," + "\n")
         out_f.write(r"ylabel={\parbox{9em}{\centering fraction of students \\ $r^a_{\rm QVA}(Q,V,A)$ / \%}}," + "\n")
-        out_f.write(r"symbolic x coords={A,B,C,D,E,none,multi}," + "\n")
-        out_f.write(r"xticklabels={A,B,C,D,E,\vphantom{A}none,multi}," + "\n")
+        if config["multiple_answers_per_question"]:
+            out_f.write(r"symbolic x coords={A,B,C,D,E,none,multi}," + "\n")
+            out_f.write(r"xticklabels={A,B,C,D,E,\vphantom{A}none,multi}," + "\n")
+        else:
+            out_f.write(r"symbolic x coords={A,B,C,D,E,none}," + "\n")
+            out_f.write(r"xticklabels={A,B,C,D,E,\vphantom{A}none}," + "\n")
         out_f.write(r"xtick=data," + "\n")
         out_f.write(r"ymajorgrids=true," + "\n")
         out_f.write(r"enlarge x limits=0.12," + "\n")
         out_f.write(r"enlarge y limits={upper,value=0.25}," + "\n")
         out_f.write(r"legend style={at={(1.02,0.5)},anchor=west}," + "\n")
+        num_bar_groups = d.N_A + 1
+        if config["multiple_answers_per_question"]:
+            num_bar_groups += 1
         out_f.write(r"bar width=%gcm," % (width / float(d.N_A + 2) / float(d.N_V) / 2) + "\n")
         out_f.write(r"point meta=explicit," + "\n")
         out_f.write(r"nodes near coords={\pgfmathfloatifflags{\pgfplotspointmeta}{0}{}{\pgfmathprintnumber{\pgfplotspointmeta}}}," + "\n")
@@ -2034,7 +2041,8 @@ def write_stats_tex_question_answers(out_f, d):
             for Ai in range(d.N_A):
                 out_f.write(r"(%s,%g) [%g]" % (ind2chr(Ai), d.r_a_QVA[Qi,Vi,Ai] * 100, d.P[Qi,Vi,Ai]) + "\n")
             out_f.write(r"(none,%g) [0]" % (d.r_na_QV[Qi,Vi] * 100) + "\n")
-            out_f.write(r"(multi,%g) [0]" % (sum(d.n_b_QVC[Qi,Vi,2:]) * (100./d.n_s_QV[Qi,Vi])) + "\n")
+            if config["multiple_answers_per_question"]:
+                out_f.write(r"(multi,%g) [0]" % (sum(d.n_b_QVC[Qi,Vi,2:]) * (100./d.n_s_QV[Qi,Vi])) + "\n")
             out_f.write(r"};" + "\n")
         out_f.write(r"\legend{%s};" % ",".join(["$V = %d$" % (Vi + 1) for Vi in range(d.N_V) if d.n_s_QV[Qi,Vi] > 0]) + "\n")
         out_f.write(r"\end{axis}" + "\n")
@@ -2108,7 +2116,7 @@ def write_statistics(output_filename, d, config):
         out_f.write(r"\end{tabular}" + "\n")
         out_f.write(r"\end{center}" + "\n")
         out_f.write("\n")
-        write_stats_tex_question_summary(out_f, d)
+        write_stats_tex_question_summary(out_f, d, config)
         out_f.write("\n")
         out_f.write(r"\vspace{1em}" + "\n")
         out_f.write("\n")
@@ -2119,7 +2127,7 @@ def write_statistics(output_filename, d, config):
         out_f.write("\n")
         out_f.write(r"\vspace{2em}" + "\n")
         out_f.write("\n")
-        write_stats_tex_variant_summary(out_f, d)
+        write_stats_tex_variant_summary(out_f, d, config)
         out_f.write("\n")
         out_f.write(r"\clearpage" + "\n")
         out_f.write("\n")
@@ -2131,13 +2139,13 @@ def write_statistics(output_filename, d, config):
         out_f.write("\n")
         out_f.write(r"\vspace{2em}" + "\n")
         out_f.write("\n")
-        write_stats_tex_question_summary_scatter(out_f, d)
+        write_stats_tex_question_summary_scatter(out_f, d, config)
 
         out_f.write("\n")
         out_f.write(r"\clearpage" + "\n")
         out_f.write(r"\section{Question detailed data}" + "\n")
         out_f.write("\n")
-        write_stats_tex_question_answers(out_f, d)
+        write_stats_tex_question_answers(out_f, d, config)
 
         out_f.write(r"\end{document}" + "\n")
     log("Successfully completed writing statistics tex file")
