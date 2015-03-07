@@ -9,6 +9,10 @@
 
   * Fix statistics display for multiple answers (Dallas Trinkle).
 
+  * Add curving support via configuration options rather than as
+    separate command. The `proc-curve` commandline argument is no
+    longer available.
+
 1.11.0 - 2015-01-29
 
   * Significantly expand the `randexam-user-manual`.

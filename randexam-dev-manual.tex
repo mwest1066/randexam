@@ -5,6 +5,7 @@
 \usepackage{syntax}
 \usepackage{dirtree}
 \usepackage{longtable}
+\usepackage{pgfplots}
 
 \begin{document}
 
@@ -439,7 +440,7 @@ actually took. To make this clear, we consider the arrays
     $P_{\rm s}(s)$ & $N_{\rm s}$
     & total points awarded to student $s$ scored using the correct exam \\
     $P_{sQ}(s,Q)$ & $N_{\rm s} \times N_{\rm Q}$
-    & points awarded to student $s$ for library question $Q$ \\
+    & points awarded to student $s$ for library question $Q$
   \end{tabular}
 \end{center}
 We define an array for partial credit $\sigma(n)$ (the variable
@@ -463,6 +464,68 @@ should be approximately $N_{\rm Q} / N_{\rm A}$, assuming that each
 question is worth one point if correct. Some significant deviations
 are likely, however, when the number of students $N_{\rm s}$ is much
 larger than the number of questions $N_{\rm Q}$.
+
+\section{Curving}
+\label{sec:curving}
+
+Curved score values are stored in the array:
+\begin{center}
+  \begin{tabular}{lll}
+    array & dimensions & description \\
+    \hline
+    $P^{\rm curve}_{\rm s}(s)$ & $N_{\rm s}$
+    & total curved points awarded to student $s$
+  \end{tabular}
+\end{center}
+
+The default is for no curving, in which case $P^{\rm curve}_{\rm s}$
+is equal to $P_{\rm s}$. If score curving is enabled (by the
+\texttt{curve_scores} configuration parameter) then
+$P^{\rm curve}_{\rm s}$ is computed using the piecewise linear
+function shown in Figure~\ref{fig:curve} with the following
+parameters:
+\begin{center}
+  \begin{tabular}{cll}
+    quantity & config option & description \\
+    \hline
+    $M_0$ & --- & median of old (uncurved) scores \\
+    $M_1$ & \texttt{curve_new_median} & desired median of new (curved) scores \\
+    $Z_1$ & \texttt{curve_new_zero} & desired new (curved) score for old zero score
+  \end{tabular}
+\end{center}
+
+\begin{figure}
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=10cm,
+      xlabel={old score $P_{\rm s}$},
+      ylabel={new score $P^{\rm curve}_{\rm s}$},
+      grid=both,
+      axis equal image,
+      xmin=0,
+      xmax=100,
+      ymin=0,
+      ymax=100,
+      ]
+      \node[above right] at (axis cs:60,0) {$M_0$};
+      \node[above right] at (axis cs:0,80) {$M_1$};
+      \node[below right] at (axis cs:0,20) {$Z_1$};
+      \addplot coordinates {
+        (0,20)
+        (60,80)
+        (100,100)
+      };
+      \addplot[dashed,blue,mark=*] coordinates {
+        (0,80)
+        (60,80)
+        (60,0)
+      };
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Curving function that transforms old scores to new scores.}
+  \label{fig:curve}
+\end{figure}
 
 \section{Statistics}
 \label{sec:statistics}

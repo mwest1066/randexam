@@ -64,6 +64,9 @@ DEFAULT_CONFIG = {
     "randomize_questions": True,
     "randomize_variants": True,
     "raw_scan_directory": "",
+    "curve_scores": False,
+    "curve_new_median": 80,
+    "curve_new_zero": 20,
 }
 
 ######################################################################
@@ -136,9 +139,9 @@ def main():
         (P, C) = extract_points(library, N_A)
         c = generate_solutions(Q, V, A, C)
         P = read_points(config["points_filename"])
-        d = generate_scores_and_statistics(config["raw_stats_prefix"], P, K, Q, V, A, u, k, b, c)
-        write_scores(config["scores_filename"], u, d.P_s)
-        write_gradebook(config["gradebook_filename"], u, d.P_s)
+        d = generate_scores_and_statistics(config["raw_stats_prefix"], P, K, Q, V, A, u, k, b, c, config)
+        write_scores(config["scores_filename"], u, d.P_curve_s)
+        write_gradebook(config["gradebook_filename"], u, d.P_curve_s)
         write_statistics(config["stats_filename"], d, config)
     elif command == "proc-feedback":
         library = read_library(config["library_filename"], config)
@@ -148,7 +151,7 @@ def main():
         (u, k, b) = read_answers(config["answers_filename"], N_A)
         P = read_points(config["points_filename"])
         c = generate_solutions(Q, V, A, C)
-        (e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
+        (e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b, config)
         generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, c, config)
     elif command == "proc-email":
         (K, Q, V, A) = read_specs(config["specs_filename"])
@@ -160,7 +163,8 @@ def main():
         N_A = config["answers_per_question"]
         (P, C) = extract_points(library, N_A)
         (u, P_s) = read_scores(config["scores_filename"])
-        P_curve_s = curve_scores(P_s)
+        P_max = P.max(axis=2).max(axis=1).sum()
+        P_curve_s = curve_scores(P_s, P_max, config)
         write_scores(config["curve_scores_filename"], u, P_curve_s)
         write_gradebook(config["gradebook_filename"], u, P_curve_s)
         d = Struct()
@@ -1366,8 +1370,8 @@ def keys_to_exams(K, k, u):
     log("Successfully completed matching keys to exams")
     return e
 
-def generate_scores(P, K, Q, V, A, u, k, b):
-    """(e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
+def generate_scores(P, K, Q, V, A, u, k, b, config):
+    """(e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P, K, Q, V, A, u, k, b, config)
 
     Generate the score arrays from the exam specifications and the
     student answer data.
@@ -1424,13 +1428,39 @@ def generate_scores(P, K, Q, V, A, u, k, b):
                               % (u[si,0], u[si,1], u[si,2], u[si,3], P_se[si,ei], K[ei], K[best_e],
                                  P_se[si,best_e], hamming_distance(K[ei], K[best_e])))
 
+    P_curve_s = P_s.copy()
+    if config["curve_scores"]:
+        P_max = P.max(axis=2).max(axis=1).sum()
+        P_curve_s = curve_scores(P_s, P_max, config)
+
     log_array(P_seq, "P_seq", ["N_s", "N_e", "N_Q"])
     log_array(P_se, "P_se", ["N_s", "N_e"])
     log_array(P_sq, "P_sq", ["N_s", "N_Q"])
     log_array(P_s, "P_s", ["N_s"])
     log_array(P_sQ, "P_sQ", ["N_s", "N_Q"])
+    log_array(P_curve_s, "P_curve_s", ["N_s"])
     log("Successfully completed generating scores")
-    return (e, P_seq, P_se, P_sq, P_s, P_sQ)
+    return (e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s)
+
+def curve_scores(P_s, P_max, config):
+    """P_curve_s = curve_scores(P_s, P_max, config)
+
+    Curve the scores.
+    """
+    P_curve_s = P_s
+    N_s = len(P_s)
+
+    old_median = np.median(P_s)
+    new_median = config["curve_new_median"]
+    new_zero = config["curve_new_zero"]
+
+    for i in range(N_s):
+        if P_s[i] > old_median:
+            P_curve_s[i] = P_max - (P_max - P_s[i]) * (P_max - new_median) / (P_max - old_median)
+        else:
+            P_curve_s[i] = new_zero + P_s[i] * (new_median - new_zero) / old_median
+
+    return P_curve_s
 
 def write_csv(output_filename, headers, data, index_formats=None):
     """Write the given array as a CSV file.
@@ -1490,8 +1520,8 @@ def write_halfviz(output_filename, data, threshold):
                     out_f.write("%d -- %d" % (i + 1, j + 1) + "\n")
     log("Successfully completed writing graph file")
 
-def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c):
-    """d = generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c)
+def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c, config):
+    """d = generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c, config)
 
     d is a structure containing all data arrays and all generated
     statistics arrays.
@@ -1515,7 +1545,7 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c):
     d.k = k
     d.b = b
     d.c = c
-    (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ) = generate_scores(P, K, Q, V, A, u, k, b)
+    (d.e, d.P_seq, d.P_se, d.P_sq, d.P_s, d.P_sQ, d.P_curve_s) = generate_scores(P, K, Q, V, A, u, k, b, config)
 
     write_csv(output_prefix + "_P_seq.csv", ["s", "e", "P_seq(s,e,q=%d)"], d.P_seq)
     write_csv(output_prefix + "_P_se.csv", ["s", "P_se(s,e=%d)"], d.P_se)
@@ -1761,8 +1791,8 @@ def generate_scores_and_statistics(output_prefix, P, K, Q, V, A, u, k, b, c):
 ######################################################################
 ######################################################################
 
-def write_scores(output_filename, u, P_s):
-    """write_scores(output_filename, u, P_s)
+def write_scores(output_filename, u, P_curve_s):
+    """write_scores(output_filename, u, P_curve_s)
 
     Write the final exam scores to scores.csv.
     """
@@ -1771,9 +1801,9 @@ def write_scores(output_filename, u, P_s):
 
     with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
-        writer.writerow(["s", "Name", "Initial", "Number", "NetID", "P_s(s)"])
+        writer.writerow(["s", "Name", "Initial", "Number", "NetID", "P_curve_s(s)"])
         for si in range(N_s):
-            writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], P_s[si]])
+            writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], P_curve_s[si]])
     log("Successfully completed writing scores to file")
 
 def read_scores(output_filename):
@@ -1801,37 +1831,11 @@ def read_scores(output_filename):
     log("Successfully completed reading scores from file")
     return (u, P_s)
 
-def curve_scores(P_s):
-    """P_curve_s = curve_scores(P_s)
-
-    Curve the scores.
-    """
-    P_curve_s = P_s
-    N_s = len(P_s)
-
-    max_score = 100
-
-    old_median = np.median(P_s)
-    new_median = 80
-
-    new_zero = 20 # only used for the piecewise variant below
-
-    for i in range(N_s):
-        P_curve_s[i] = max_score - (max_score - P_s[i]) * (max_score - new_median) / (max_score - old_median)
-
-        # piecewise linear
-        #if P_s[i] > old_median:
-        #    P_curve_s[i] = max_score - (max_score - P_s[i]) * (max_score - new_median) / (max_score - old_median)
-        #else:
-        #    P_curve_s[i] = new_zero + P_s[i] * (new_median - new_zero) / old_median
-
-    return P_curve_s
-
 ######################################################################
 ######################################################################
 
-def write_gradebook(output_filename, u, P_s):
-    """write_gradebook(output_filename, u, P_s)
+def write_gradebook(output_filename, u, P_curve_s):
+    """write_gradebook(output_filename, u, P_curve_s)
 
     Write the final exam scores to gradebook.csv.
     """
@@ -1841,37 +1845,37 @@ def write_gradebook(output_filename, u, P_s):
     with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         for si in range(N_s):
-            writer.writerow([u[si,3].lower(), "%.2f" % P_s[si]])
+            writer.writerow([u[si,3].lower(), "%.2f" % P_curve_s[si]])
     log("Successfully completed writing gradebook scores to file")
 
 ######################################################################
 ######################################################################
 
-def tex_write_basic_stats(out_f, d):
+def tex_write_basic_stats(out_f, P_s, P_max):
     out_f.write(r"\begin{center}" + "\n")
     out_f.write(r"\begin{tabular}{|l|l|l|}" + "\n")
     out_f.write(r"\hline" + "\n")
-    out_f.write(r"number of students & %d & \\" % len(d.P_s) + "\n")
+    out_f.write(r"number of students & %d & \\" % len(P_s) + "\n")
     out_f.write(r"\hline" + "\n")
-    out_f.write(r"minimum score & %g & %.1f\%% \\" % (d.P_s.min(), d.P_s.min() / d.P_max * 100) + "\n")
+    out_f.write(r"minimum score & %g & %.1f\%% \\" % (P_s.min(), P_s.min() / P_max * 100) + "\n")
     out_f.write(r"\hline" + "\n")
-    out_f.write(r"maximum score & %g & %.1f\%% \\" % (d.P_s.max(), d.P_s.max() / d.P_max * 100) + "\n")
+    out_f.write(r"maximum score & %g & %.1f\%% \\" % (P_s.max(), P_s.max() / P_max * 100) + "\n")
     out_f.write(r"\hline" + "\n")
-    out_f.write(r"mean score & %g & %.1f\%% \\" % (d.P_s.mean(), d.P_s.mean() / d.P_max * 100) + "\n")
+    out_f.write(r"mean score & %g & %.1f\%% \\" % (P_s.mean(), P_s.mean() / P_max * 100) + "\n")
     out_f.write(r"\hline" + "\n")
-    out_f.write(r"median score & %g & %.1f\%% \\" % (np.median(d.P_s), np.median(d.P_s) / d.P_max * 100) + "\n")
+    out_f.write(r"median score & %g & %.1f\%% \\" % (np.median(P_s), np.median(P_s) / P_max * 100) + "\n")
     out_f.write(r"\hline" + "\n")
-    out_f.write(r"std.\ dev. & %g & %.1f\%% \\" % (np.std(d.P_s), np.std(d.P_s) / d.P_max * 100) + "\n")
+    out_f.write(r"std.\ dev. & %g & %.1f\%% \\" % (np.std(P_s), np.std(P_s) / P_max * 100) + "\n")
     out_f.write(r"\hline" + "\n")
-    n_perfect = (d.P_s == d.P_max).sum()
-    out_f.write(r"num.\ perfect scores & %d & %.1f\%% \\" % (n_perfect, float(n_perfect) / len(d.P_s) * 100) + "\n")
+    n_perfect = (P_s == P_max).sum()
+    out_f.write(r"num.\ perfect scores & %d & %.1f\%% \\" % (n_perfect, float(n_perfect) / len(P_s) * 100) + "\n")
     out_f.write(r"\hline" + "\n")
     out_f.write(r"\end{tabular}" + "\n")
     out_f.write(r"\end{center}" + "\n")
 
-def tex_write_pdf(out_f, d):
+def tex_write_pdf(out_f, P_s, P_max):
     n_bins = 20
-    (hist, bin_edges) = np.histogram(d.P_s, bins=n_bins, range=(0, d.P_max))
+    (hist, bin_edges) = np.histogram(P_s, bins=n_bins, range=(0, P_max))
     out_f.write(r"\begin{center}" + "\n")
     out_f.write(r"\begin{tikzpicture}" + "\n")
     out_f.write(r"\begin{axis}[" + "\n")
@@ -1891,8 +1895,9 @@ def tex_write_pdf(out_f, d):
     out_f.write(r"\end{tikzpicture}" + "\n")
     out_f.write(r"\end{center}" + "\n")
 
-def tex_write_cdf(out_f, d):
-    sorted_P_s = np.sort(d.P_s)
+def tex_write_cdf(out_f, P_s, P_max):
+    sorted_P_s = np.sort(P_s)
+    N_s = len(P_s)
     out_f.write(r"\begin{center}" + "\n")
     out_f.write(r"\begin{tikzpicture}" + "\n")
     out_f.write(r"\begin{axis}[" + "\n")
@@ -1905,9 +1910,9 @@ def tex_write_cdf(out_f, d):
     out_f.write(r"]" + "\n")
     out_f.write(r"\addplot[const plot, draw=blue] coordinates {" + "\n")
     out_f.write(r"(0,0)" + "\n")
-    for si in range(d.N_s):
+    for si in range(N_s):
         out_f.write(r"(%g,%d)" % (sorted_P_s[si], si + 1) + "\n")
-    out_f.write(r"(%g,%d)" % (d.P_max, d.N_s) + "\n")
+    out_f.write(r"(%g,%d)" % (P_max, N_s) + "\n")
     out_f.write(r"};" + "\n")
     out_f.write(r"\end{axis}" + "\n")
     out_f.write(r"\end{tikzpicture}" + "\n")
@@ -2093,11 +2098,23 @@ def write_statistics(output_filename, d, config):
         out_f.write(r"\section{Student score distribution}" + "\n")
         out_f.write("\n")
         out_f.write(r"\vspace{1cm}" + "\n")
-        tex_write_basic_stats(out_f, d)
+        tex_write_basic_stats(out_f, d.P_curve_s, d.P_max)
         out_f.write(r"\vspace{8mm}" + "\n")
-        tex_write_pdf(out_f, d)
+        tex_write_pdf(out_f, d.P_curve_s, d.P_max)
         out_f.write(r"\vspace{8mm}" + "\n")
-        tex_write_cdf(out_f, d)
+        tex_write_cdf(out_f, d.P_curve_s, d.P_max)
+
+        if config["curve_scores"]:
+            out_f.write("\n")
+            out_f.write(r"\clearpage" + "\n")
+            out_f.write(r"\section{Raw (uncurved) student score distribution}" + "\n")
+            out_f.write("\n")
+            out_f.write(r"\vspace{1cm}" + "\n")
+            tex_write_basic_stats(out_f, d.P_s, d.P_max)
+            out_f.write(r"\vspace{8mm}" + "\n")
+            tex_write_pdf(out_f, d.P_s, d.P_max)
+            out_f.write(r"\vspace{8mm}" + "\n")
+            tex_write_cdf(out_f, d.P_s, d.P_max)
 
         out_f.write("\n")
         out_f.write(r"\clearpage" + "\n")
