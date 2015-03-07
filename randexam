@@ -2034,7 +2034,7 @@ def write_stats_tex_question_answers(out_f, d):
             for Ai in range(d.N_A):
                 out_f.write(r"(%s,%g) [%g]" % (ind2chr(Ai), d.r_a_QVA[Qi,Vi,Ai] * 100, d.P[Qi,Vi,Ai]) + "\n")
             out_f.write(r"(none,%g) [0]" % (d.r_na_QV[Qi,Vi] * 100) + "\n")
-            out_f.write(r"(multi,%g) [0]" % (sum(d.n_b_QVC[Qi,Vi,2:]) * (100./d.N_s)) + "\n")
+            out_f.write(r"(multi,%g) [0]" % (sum(d.n_b_QVC[Qi,Vi,2:]) * (100./d.n_s_QV[Qi,Vi])) + "\n")
             out_f.write(r"};" + "\n")
         out_f.write(r"\legend{%s};" % ",".join(["$V = %d$" % (Vi + 1) for Vi in range(d.N_V) if d.n_s_QV[Qi,Vi] > 0]) + "\n")
         out_f.write(r"\end{axis}" + "\n")
