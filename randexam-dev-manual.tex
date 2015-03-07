@@ -510,6 +510,8 @@ variants. Basic statistics for this assessment are listed below.
     & normalized average points per student for question $Q$ \\
     $R_{\rm QV}(Q,V)$ & $N_{\rm Q} \times N_{\rm V}$
     & ratio of average points for variant $V$ to average for question $Q$ \\
+    $n_{\rm QVC}(Q,V,C)$ & $N_{\rm Q} \times N_{\rm V} \times N_{\rm A}$
+    & number of students who bubbled in $C$ answers for variant $V$ of question $Q$ \\
     $r^{\rm s}_{QQ}(Q,\hat{Q})$ & $N_{\rm Q} \times N_{\rm Q}$
     & correlation between student scores on questions $Q$ and $\hat{Q}$ \\
     $r^{\rm Q}_{\rm ss}(s,\hat{s})$ & $N_{\rm s} \times N_{\rm s}$
@@ -557,6 +559,8 @@ These quantities are computed by:
   P^{\rm max} &= \sum_{Q=1}^{N_{\rm Q}} P^{\rm max}_{\rm Q}(Q) \displaybreak[0] \\
   \hat{P}_{\rm Q}(Q) &= \frac{\bar{P}_{\rm Q}(Q)}{P^{\rm max}_{Q}(Q)} \displaybreak[0] \\
   R_{\rm QV}(Q,V) &= \frac{\bar{P}_{\rm QV}(Q,V)}{\bar{P}_{\rm Q}(Q)} \displaybreak[0] \\
+  n_{\rm QVC}(Q,V,C) &= \sum_{s=1}^{N_{\rm s}} \delta\left(C - \sum_{a=1}^{N_{\rm A}} b\big(s,q_{\rm sQ}(s,Q),a\big)\right)
+  \delta\big(V-V_{\rm sQ}(s,Q)\big) \displaybreak[0]\\
   r^{\rm s}_{\rm QQ}(Q, \hat{Q}) &= \frac{\sum_{s=1}^{N_{\rm s}}
     (P_{sQ}(s,Q) - \bar{P}_Q(Q)) (P_{sQ}(s,\hat{Q}) - \bar{P}_Q(\hat{Q}))
   }{
