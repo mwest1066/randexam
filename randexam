@@ -2276,16 +2276,17 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, con
             out_f.write(r"\vspace*{.3in}" + "\n")
 
             out_f.write(r"\begin{center}" + "\n")
-            out_f.write(r"\begin{tabular}{|c|c|c|c|}\hline" + "\n")
-            out_f.write(r"Question  & Correct Answer & Your Answer & Points\\\hline" + "\n")
+            out_f.write(r"\begin{tabular}{|c|c|c|c|c|}\hline" + "\n")
+            out_f.write(r"Question & Library Question & Correct Answer & Your Answer & Points\\\hline" + "\n")
             for qi in range(N_Q):
                 answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
-                out_f.write(r"%d & %s & {\color{%s} %s} & %.3g\\\hline"
-                            % ((qi + 1), c[ei,qi], answer_color, bubble2string(b[si,qi,:]), P_sq[si,qi]) + "\n")
+                out_f.write(r"%d & %d/%d & %s & {\color{%s} %s} & %.3g\\\hline"
+                            % (qi + 1, Q[ei,qi] + 1, V[ei, qi] + 1, c[ei,qi], answer_color,
+                               bubble2string(b[si,qi,:]), P_sq[si,qi]) + "\n")
             if config["curve_scores"]:
-                out_f.write(r"\hline\multicolumn{3}{|l|}{\bf Total curved score} & %g\\\hline" % P_curve_s[si])
+                out_f.write(r"\hline\multicolumn{4}{|l|}{\bf Total curved score} & %g\\\hline" % P_curve_s[si])
             else:
-                out_f.write(r"\hline{\bf Total} &&& %g\\\hline" % P_s[si])
+                out_f.write(r"\hline{\bf Total} &&&& %g\\\hline" % P_s[si])
             out_f.write(r"\end{tabular}" + "\n")
             out_f.write(r"\end{center}" + "\n")
 

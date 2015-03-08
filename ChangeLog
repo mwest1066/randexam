@@ -16,6 +16,8 @@
   * Add `feedback_solutions` config option to allow feedback to be
     generated without questions or solutions.
 
+  * Show library question/variant in student feedback.
+
 1.11.0 - 2015-01-29
 
   * Significantly expand the `randexam-user-manual`.
