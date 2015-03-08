@@ -145,6 +145,12 @@ random guessing). In practice this has never occurred.
 \begin{verbatim}
 pdflatex -shell-escape filename.tex
 \end{verbatim}
+  \item To generate student feedback, all the TikZ files must be in
+    the current directory, so copy them over if they are somewhere
+    else. This is both because latex isn't being run with
+    \texttt{-shell-escape} when generating feedback, and because the
+    use of \texttt{-output-directory} is incompatible with the TikZ
+    external file support.
   \end{enumerate}
 \end{enumerate}
 
