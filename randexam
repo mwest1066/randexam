@@ -65,8 +65,8 @@ DEFAULT_CONFIG = {
     "randomize_variants": True,
     "raw_scan_directory": "",
     "curve_scores": False,
-    "curve_new_median": 80,
-    "curve_new_zero": 20,
+    "curve_new_median": 80.0,
+    "curve_new_zero": 20.0,
 }
 
 ######################################################################
@@ -151,8 +151,8 @@ def main():
         (u, k, b) = read_answers(config["answers_filename"], N_A)
         P = read_points(config["points_filename"])
         c = generate_solutions(Q, V, A, C)
-        (e, P_seq, P_se, P_sq, P_s, P_sQ) = generate_scores(P, K, Q, V, A, u, k, b, config)
-        generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, c, config)
+        (e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P, K, Q, V, A, u, k, b, config)
+        generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, config)
     elif command == "proc-email":
         (K, Q, V, A) = read_specs(config["specs_filename"])
         (N_e, N_Q, N_A) = A.shape
@@ -1447,6 +1447,7 @@ def curve_scores(P_s, P_max, config):
 
     Curve the scores.
     """
+    log_and_print("Curving scores")
     P_curve_s = P_s.copy()
     N_s = len(P_s)
 
@@ -1454,12 +1455,20 @@ def curve_scores(P_s, P_max, config):
     new_median = config["curve_new_median"]
     new_zero = config["curve_new_zero"]
 
-    for i in range(N_s):
-        if P_s[i] > old_median:
-            P_curve_s[i] = P_max - (P_max - P_s[i]) * (P_max - new_median) / (P_max - old_median)
-        else:
-            P_curve_s[i] = new_zero + P_s[i] * (new_median - new_zero) / old_median
+    log_and_print("Curving from:")
+    log_and_print("   old median M_0 = %g" % old_median)
+    log_and_print("to:")
+    log_and_print("   new median M_1 = %g" % new_median)
+    log_and_print("   new zero Z_1 = %g" % new_zero)
 
+    for si in range(N_s):
+        if P_s[si] > old_median:
+            P_curve_s[si] = P_max - (P_max - P_s[si]) * (P_max - new_median) / (P_max - old_median)
+        else:
+            P_curve_s[si] = new_zero + P_s[si] * (new_median - new_zero) / old_median
+        log("student %d: curved from %g to %g" % (si + 1, P_s[si], P_curve_s[si]))
+
+    log("Successfully completed curving scores")
     return P_curve_s
 
 def write_csv(output_filename, headers, data, index_formats=None):
@@ -2266,7 +2275,7 @@ def write_summary_statistics(output_filename, d, config):
 ######################################################################
 ######################################################################
 
-def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, c, config):
+def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, config):
     log_and_print("Writing feedback directory: %s" % config["feedback_directory"])
     if not os.path.exists(config["feedback_directory"]):
         os.makedirs(config["feedback_directory"])
@@ -2314,7 +2323,10 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, c, config):
                 answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
                 out_f.write(r"%d & %s & {\color{%s} %s} & %.3g\\\hline"
                             % ((qi + 1), c[ei,qi], answer_color, bubble2string(b[si,qi,:]), P_sq[si,qi]) + "\n")
-            out_f.write(r"\hline{\bf Total} &&& %.3g\\\hline" % P_s[si])
+            if config["curve_scores"]:
+                out_f.write(r"\hline\multicolumn{3}{|l|}{\bf Total curved score} & %g\\\hline" % P_curve_s[si])
+            else:
+                out_f.write(r"\hline{\bf Total} &&& %g\\\hline" % P_s[si])
             out_f.write(r"\end{tabular}" + "\n")
             out_f.write(r"\end{center}" + "\n")
 
