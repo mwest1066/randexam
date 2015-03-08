@@ -2284,9 +2284,9 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, con
                             % (qi + 1, Q[ei,qi] + 1, V[ei, qi] + 1, c[ei,qi], answer_color,
                                bubble2string(b[si,qi,:]), P_sq[si,qi]) + "\n")
             if config["curve_scores"]:
-                out_f.write(r"\hline\multicolumn{4}{|l|}{\bf Total curved score} & %g\\\hline" % P_curve_s[si])
+                out_f.write(r"\hline\multicolumn{4}{|l|}{\bf Total curved score} & {\bf %g}\\\hline" % P_curve_s[si])
             else:
-                out_f.write(r"\hline{\bf Total} &&&& %g\\\hline" % P_s[si])
+                out_f.write(r"\hline{\bf Total} &&&& {\bf %g}\\\hline" % P_s[si])
             out_f.write(r"\end{tabular}" + "\n")
             out_f.write(r"\end{center}" + "\n")
 
