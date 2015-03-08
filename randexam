@@ -84,11 +84,10 @@ def main():
         print("   proc-ans       process the answer file to produce scores")
         print("   proc-feedback  process the answer file to produce personalized feedback")
         print("   proc-email     send personalized feedback by email")
-        print("   proc-curve     curve and rewrite scores")
         sys.exit(0)
 
     command = sys.argv[1]
-    valid_commands = ["proc-lib", "proc-scan", "proc-ans", "proc-feedback", "proc-email", "proc-curve"]
+    valid_commands = ["proc-lib", "proc-scan", "proc-ans", "proc-feedback", "proc-email"]
     if command not in valid_commands:
         print("ERROR: unrecognized command: %s" % command)
         print("valid commands are: %s" % ", ".join(valid_commands))
@@ -158,20 +157,6 @@ def main():
         (N_e, N_Q, N_A) = A.shape
         (u, k, b) = read_answers(config["answers_filename"], N_A)
         send_email(u, config)
-    elif command == "proc-curve":
-        library = read_library(config["library_filename"], config)
-        N_A = config["answers_per_question"]
-        (P, C) = extract_points(library, N_A)
-        (u, P_s) = read_scores(config["scores_filename"])
-        P_max = P.max(axis=2).max(axis=1).sum()
-        P_curve_s = curve_scores(P_s, P_max, config)
-        write_scores(config["curve_scores_filename"], u, P_curve_s)
-        write_gradebook(config["gradebook_filename"], u, P_curve_s)
-        d = Struct()
-        d.N_s = len(P_s)
-        d.P_s = P_s
-        d.P_max = P.max(axis=2).max(axis=1).sum()
-        write_summary_statistics(config["curve_stats_filename"], d, config)
 
 ######################################################################
 ######################################################################
@@ -279,10 +264,8 @@ def read_config(config_filename, default_config):
     config["points_filename"] = prefix + "points.csv"
     config["answers_filename"] = prefix + "answers.csv"
     config["scores_filename"] = prefix + "scores.csv"
-    config["curve_scores_filename"] = prefix + "curve_scores.csv"
     config["gradebook_filename"] = prefix + "gradebook.csv"
     config["stats_filename"] = prefix + "stats.tex"
-    config["curve_stats_filename"] = prefix + "curve_stats.tex"
     config["raw_stats_prefix"] = prefix + "stats"
 
     log("Successfully completed config file reading")
@@ -1814,34 +1797,6 @@ def write_scores(output_filename, u, P_curve_s):
         for si in range(N_s):
             writer.writerow([si + 1, u[si,0], u[si,1], u[si,2], u[si,3], P_curve_s[si]])
     log("Successfully completed writing scores to file")
-
-def read_scores(output_filename):
-    """(u, P_s) = read_scores(output_filename)
-
-    Read the final exam scores to from scores.csv.
-    """
-    log_and_print("Reading scores from file: %s" % output_filename)
-    u_data = []
-    P_s_data = []
-    with open(output_filename, 'r') as in_f:
-        reader = csv.reader(in_f)
-        for (i_row, row) in enumerate(reader):
-            if i_row == 0:
-                continue # skip header
-            if len(row) < 6:
-                die("%s:%d: ERROR: expected at least 6 items in row, got %d"
-                    % (input_filename, i_row + 1, len(row)))
-            u_data.append(row[1:5])
-            P_s_data.append(row[5])
-    u = np.array(u_data, dtype=object)
-    P_s = np.array(P_s_data, dtype=float)
-    log_array(u, "u", ["N_s", "N_i"])
-    log_array(P_s, "P_s", ["N_s"])
-    log("Successfully completed reading scores from file")
-    return (u, P_s)
-
-######################################################################
-######################################################################
 
 def write_gradebook(output_filename, u, P_curve_s):
     """write_gradebook(output_filename, u, P_curve_s)
