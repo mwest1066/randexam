@@ -5,6 +5,7 @@
 \usepackage{syntax}
 \usepackage{dirtree}
 \usepackage{longtable}
+\usepackage{pgfplots}
 \usepackage{hyperref}
 
 \setlength{\parindent}{0pt}
@@ -161,6 +162,17 @@ not occur.
 \hangindent=1cm \texttt{check_valid_netids} (default: \texttt{Yes})
 Check whether all students taking the exam have NetIDs listed in the
 \texttt{XXX_netids.txt} file.
+
+\hangindent=1cm \texttt{curve_scores} (default: \texttt{No}) Whether
+to transform the final exam scores by a curving function.
+
+\hangindent=1cm \texttt{curve_new_median} (default: \texttt{80}) If
+curving is enabled, then this is the new median score of the curved
+scores.
+
+\hangindent=1cm \texttt{curve_new_zero} (default: \texttt{20}) If
+curving is enabled, then this is the new curved score than an uncurved
+value of zero will map to.
 
 \hangindent=1cm \texttt{exam_title} (default: \texttt{Exam}) Title of
 the exam (used in statistics reports).
@@ -360,11 +372,56 @@ to feedback emails.
   information).
 \item Run \texttt{pdflatex XXX_stats.tex} to generate a PDF of the
   exam statistics.
-\item If desired, run \texttt{./randexam proc-curve} and adjust the
-  \texttt{curve_scores()} function in \texttt{randexam} as
-  desired. The default curving functions are described at
-  \url{http://lagrange.mechse.illinois.edu/mwest/curving/}.
 \end{enumerate}
+
+\section{Curving exam scores}
+
+If score curving is enabled (by the \texttt{curve_scores}
+configuration parameter) then the final student scores are transformed
+using the piecewise linear function shown in Figure~\ref{fig:curve}
+with the following parameters:
+\begin{center}
+  \begin{tabular}{cll}
+    quantity & config option & description \\
+    \hline
+    $M_0$ & --- & median of old (uncurved) scores \\
+    $M_1$ & \texttt{curve_new_median} & desired median of new (curved) scores \\
+    $Z_1$ & \texttt{curve_new_zero} & desired new (curved) score for old zero score
+  \end{tabular}
+\end{center}
+
+\begin{figure}
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=10cm,
+      xlabel={old score $P_{\rm s}$},
+      ylabel={new score $P^{\rm curve}_{\rm s}$},
+      grid=both,
+      axis equal image,
+      xmin=0,
+      xmax=100,
+      ymin=0,
+      ymax=100,
+      ]
+      \node[above right] at (axis cs:60,0) {$M_0$};
+      \node[above right] at (axis cs:0,80) {$M_1$};
+      \node[below right] at (axis cs:0,20) {$Z_1$};
+      \addplot coordinates {
+        (0,20)
+        (60,80)
+        (100,100)
+      };
+      \addplot[dashed,blue,mark=*] coordinates {
+        (0,80)
+        (60,80)
+        (60,0)
+      };
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Curving function that transforms old scores to new scores.}
+  \label{fig:curve}
+\end{figure}
 
 \section{Allowing partial credit for multiple answers}
 
