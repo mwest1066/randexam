@@ -42,6 +42,9 @@ DEFAULT_CONFIG = {
     "answers_per_question": 5,
     "check_repeated_exam_keys": True,
     "check_valid_netids": True,
+    "curve_scores": False,
+    "curve_new_median": 80.0,
+    "curve_new_zero": 20.0,
     "exam_title": "Exam",
     "feedback_directory": "feedback",
     "filename_prefix": "",
@@ -64,9 +67,7 @@ DEFAULT_CONFIG = {
     "randomize_questions": True,
     "randomize_variants": True,
     "raw_scan_directory": "",
-    "curve_scores": False,
-    "curve_new_median": 80.0,
-    "curve_new_zero": 20.0,
+    "score_decimals": 1,
 }
 
 ######################################################################
@@ -1391,6 +1392,7 @@ def generate_scores(P, K, Q, V, A, u, k, b, config):
                 if ei >= 0 and Qi >= 0:
                     P_sq[si,qi] = P_seq[si,ei,qi]
                     P_sQ[si,Qi] = P_seq[si,ei,qi]
+    P_s = np.round(P_s, decimals=config["score_decimals"])
 
     for si in range(N_s):
         best_e = P_se[si,:].argmax()
@@ -1415,6 +1417,7 @@ def generate_scores(P, K, Q, V, A, u, k, b, config):
     if config["curve_scores"]:
         P_max = P.max(axis=2).max(axis=1).sum()
         P_curve_s = curve_scores(P_s, P_max, config)
+        P_curve_s = np.round(P_curve_s, decimals=config["score_decimals"])
 
     log_array(P_seq, "P_seq", ["N_s", "N_e", "N_Q"])
     log_array(P_se, "P_se", ["N_s", "N_e"])
@@ -1809,7 +1812,7 @@ def write_gradebook(output_filename, u, P_curve_s):
     with open(output_filename, **CSV_WRITER_ARGS) as out_f:
         writer = csv.writer(out_f)
         for si in range(N_s):
-            writer.writerow([u[si,3].lower(), "%.2f" % P_curve_s[si]])
+            writer.writerow([u[si,3].lower(), "%g" % P_curve_s[si]])
     log("Successfully completed writing gradebook scores to file")
 
 ######################################################################
