@@ -47,6 +47,7 @@ DEFAULT_CONFIG = {
     "curve_new_zero": 20.0,
     "exam_title": "Exam",
     "feedback_directory": "feedback",
+    "feedback_solutions": True,
     "filename_prefix": "",
     "last_scantron_question_number": 96,
     "mail_domain": "illinois.edu",
@@ -2288,50 +2289,50 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, con
             out_f.write(r"\end{tabular}" + "\n")
             out_f.write(r"\end{center}" + "\n")
 
-            out_f.write(r"\newpage" + "\n")
-
-            flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
-            qi = 0
-            for (i_zone, zone) in enumerate(library.zones):
-                out_f.write("%% Zone %d\n\n" % (i_zone + 1))
-                out_f.write(zone.body + "\n\n")
-                for i_zone_question in range(len(zone.questions)):
-                    out_f.write(r"\newpage" + "\n")
-                    out_f.write(r"\noindent" + "\n")
-                    #out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
-                    points = flat_questions[Q[ei,qi]].points
-                    out_f.write(r"%d. (%g %s.)" % (qi + 1, points,
-                                                  "point" if points == 1 else "points")
-                                + "\n")
-                    variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
-                    out_f.write(variant.body + "\n")
-                    n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
-                    if n_answers > 0:
-                        out_f.write(r"\begin{enumerate}" + "\n")
-                        for ai in range(N_A):
-                            Ai = chr2ind(A[ei,qi,ai])
-                            if Ai >= 0:
-                                out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
-                                out_f.write(variant.answers[Ai].body + "\n")
-                        out_f.write(r"\end{enumerate}" + "\n")
-                        answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
-                        out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
-                                    % (c[ei,qi], answer_color, bubble2string(b[si,qi])))
-                        out_f.write(r"{\bf %.3g} out of {\bf %d} %s received"
-                                    % (P_sq[si,qi], points, "point" if points == 1 else "points")
+            if config["feedback_solutions"]:
+                out_f.write(r"\newpage" + "\n")
+                flat_questions = list(itertools.chain.from_iterable([zone.questions for zone in library.zones]))
+                qi = 0
+                for (i_zone, zone) in enumerate(library.zones):
+                    out_f.write("%% Zone %d\n\n" % (i_zone + 1))
+                    out_f.write(zone.body + "\n\n")
+                    for i_zone_question in range(len(zone.questions)):
+                        out_f.write(r"\newpage" + "\n")
+                        out_f.write(r"\noindent" + "\n")
+                        #out_f.write(r"\begin{minipage}{\textwidth}" + "\n")
+                        points = flat_questions[Q[ei,qi]].points
+                        out_f.write(r"%d. (%g %s.)" % (qi + 1, points,
+                                                      "point" if points == 1 else "points")
                                     + "\n")
-                    else:
-                        out_f.write(r"{\color{blue}{\bf No multiple-choice answers.}}" + "\n");
-                    out_f.write(r"\vspace{1em}"+"\n")
-                    out_f.write(r"\hrule" + "\n")
-                    out_f.write(r"\vspace{1em}"+"\n")
-                    out_f.write(r"\noindent {\bf Solution.} ")
-                    out_f.write(variant.solution + "\n")
-                    out_f.write(r"\vspace{1em}"+"\n")
-                    out_f.write(r"\hrule height 2pt"+"\n")
-                    #out_f.write(r"\end{minipage}" + "\n")
-                    #out_f.write(r"\vspace{2em}" + "\n")
-                    qi += 1
+                        variant = flat_questions[Q[ei,qi]].variants[V[ei,qi]]
+                        out_f.write(variant.body + "\n")
+                        n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
+                        if n_answers > 0:
+                            out_f.write(r"\begin{enumerate}" + "\n")
+                            for ai in range(N_A):
+                                Ai = chr2ind(A[ei,qi,ai])
+                                if Ai >= 0:
+                                    out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
+                                    out_f.write(variant.answers[Ai].body + "\n")
+                            out_f.write(r"\end{enumerate}" + "\n")
+                            answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
+                            out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
+                                        % (c[ei,qi], answer_color, bubble2string(b[si,qi])))
+                            out_f.write(r"{\bf %.3g} out of {\bf %d} %s received"
+                                        % (P_sq[si,qi], points, "point" if points == 1 else "points")
+                                        + "\n")
+                        else:
+                            out_f.write(r"{\color{blue}{\bf No multiple-choice answers.}}" + "\n");
+                        out_f.write(r"\vspace{1em}"+"\n")
+                        out_f.write(r"\hrule" + "\n")
+                        out_f.write(r"\vspace{1em}"+"\n")
+                        out_f.write(r"\noindent {\bf Solution.} ")
+                        out_f.write(variant.solution + "\n")
+                        out_f.write(r"\vspace{1em}"+"\n")
+                        out_f.write(r"\hrule height 2pt"+"\n")
+                        #out_f.write(r"\end{minipage}" + "\n")
+                        #out_f.write(r"\vspace{2em}" + "\n")
+                        qi += 1
 
             out_f.write(r"\end{document}" + "\n")
 

@@ -13,6 +13,9 @@
     separate command. The `proc-curve` commandline argument is no
     longer available.
 
+  * Add `feedback_solutions` config option to allow feedback to be
+    generated without questions or solutions.
+
 1.11.0 - 2015-01-29
 
   * Significantly expand the `randexam-user-manual`.
