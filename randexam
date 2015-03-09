@@ -2256,7 +2256,7 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, con
             out_f.write(library.preamble + "\n")
             out_f.write("\n")
             out_f.write(r"\begin{document}" + "\n")
-            out_f.write(r"\centerline{{\bf\Large %s: Solution Key}}" % config["exam_title"] + "\n")
+            out_f.write(r"\centerline{{\bf\Large %s: Results}}" % config["exam_title"] + "\n")
             out_f.write(r"\vspace{.2in}" + "\n")
             out_f.write(r"\hrule" + "\n")
             out_f.write(r"\vspace*{.3in}" + "\n")
