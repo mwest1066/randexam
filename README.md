@@ -7,7 +7,7 @@ randexam: An exam randomization and grading system.
 Version 1.12.0  
 Released 2015-03-22
 
-Homepage: <http://lagrange.mechse.illinois.edu/mwest/randexam/>
+Homepage: <http://lagrange.mechse.illinois.edu/randexam/>
 
 Copyright (C) 2012-2015 Matthew West  
 Copyright (C) 2013 Lee DeVille  
