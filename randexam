@@ -43,8 +43,9 @@ DEFAULT_CONFIG = {
     "check_repeated_exam_keys": True,
     "check_valid_netids": True,
     "curve_scores": False,
-    "curve_new_median": 80.0,
+    "curve_new_midpoint": 80.0,
     "curve_new_zero": 20.0,
+    "curve_old_midpoint": 60.0,
     "exam_title": "Exam",
     "feedback_directory": "feedback",
     "feedback_solutions": True,
@@ -1438,21 +1439,21 @@ def curve_scores(P_s, P_max, config):
     P_curve_s = P_s.copy()
     N_s = len(P_s)
 
-    old_median = np.median(P_s)
-    new_median = config["curve_new_median"]
+    old_midpoint = config["curve_old_midpoint"]
+    new_midpoint = config["curve_new_midpoint"]
     new_zero = config["curve_new_zero"]
 
     log_and_print("Curving from:")
-    log_and_print("   old median M_0 = %g" % old_median)
+    log_and_print("   old midpoint M_0 = %g" % old_midpoint)
     log_and_print("to:")
-    log_and_print("   new median M_1 = %g" % new_median)
+    log_and_print("   new midpoint M_1 = %g" % new_midpoint)
     log_and_print("   new zero Z_1 = %g" % new_zero)
 
     for si in range(N_s):
-        if P_s[si] > old_median:
-            P_curve_s[si] = P_max - (P_max - P_s[si]) * (P_max - new_median) / (P_max - old_median)
+        if P_s[si] > old_midpoint:
+            P_curve_s[si] = P_max - (P_max - P_s[si]) * (P_max - new_midpoint) / (P_max - old_midpoint)
         else:
-            P_curve_s[si] = new_zero + P_s[si] * (new_median - new_zero) / old_median
+            P_curve_s[si] = new_zero + P_s[si] * (new_midpoint - new_zero) / old_midpoint
         log("student %d: curved from %g to %g" % (si + 1, P_s[si], P_curve_s[si]))
 
     log("Successfully completed curving scores")
@@ -1887,8 +1888,8 @@ def tex_write_cdf(out_f, P_s, P_max):
     out_f.write(r"\end{center}" + "\n")
 
 def tex_write_curve_function(out_f, d, config):
-    M_0 = np.median(d.P_s)
-    M_1 = config["curve_new_median"]
+    M_0 = config["curve_old_midpoint"]
+    M_1 = config["curve_new_midpoint"]
     Z_1 = config["curve_new_zero"]
     out_f.write(r"\begin{center}" + "\n")
     out_f.write(r"\begin{tikzpicture}" + "\n")
@@ -1940,8 +1941,8 @@ def tex_write_curve_function(out_f, d, config):
     out_f.write(r"    $P$ & --- & --- & old (uncurved) student score \\" + "\n")
     out_f.write(r"    $P^{\rm curve}$ & --- & --- & new (curved) student score \\" + "\n")
     out_f.write(r"    $P^{\rm max}$ & %g & --- & maximum score \\" % d.P_max + "\n")
-    out_f.write(r"    $M_0$ & %g & --- & median of old (uncurved) scores \\" % M_0 + "\n")
-    out_f.write(r"    $M_1$ & %g & \verb+curve_new_median+ & desired median of new (curved) scores \\" % M_1 + "\n")
+    out_f.write(r"    $M_0$ & %g & \verb+curve_old_midpoint+ & midpoint of old (uncurved) scores \\" % M_0 + "\n")
+    out_f.write(r"    $M_1$ & %g & \verb+curve_new_midpoint+ & desired midpoint of new (curved) scores \\" % M_1 + "\n")
     out_f.write(r"    $Z_1$ & %g & \verb+curve_new_zero+ & desired new (curved) score for old zero score" % Z_1  + "\n")
     out_f.write(r"  \end{tabular}" + "\n")
     out_f.write(r"\end{center}" + "\n")

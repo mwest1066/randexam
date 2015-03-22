@@ -172,13 +172,18 @@ Check whether all students taking the exam have NetIDs listed in the
 \hangindent=1cm \texttt{curve_scores} (default: \texttt{No}) Whether
 to transform the final exam scores by a curving function.
 
-\hangindent=1cm \texttt{curve_new_median} (default: \texttt{80}) If
-curving is enabled, then this is the new median score of the curved
-scores.
+\hangindent=1cm \texttt{curve_new_midpoint} (default: \texttt{80}) If
+curving is enabled, then this is the new midpoint score of the curved
+scores. This is normally set to the desired value of the median.
 
 \hangindent=1cm \texttt{curve_new_zero} (default: \texttt{20}) If
 curving is enabled, then this is the new curved score than an uncurved
 value of zero will map to.
+
+\hangindent=1cm \texttt{curve_old_midpoint} (default: \texttt{80}) If
+curving is enabled, then this is the old midpoint score of the curved
+scores. This is normally set to the median value of the uncurved
+scores.
 
 \hangindent=1cm \texttt{exam_title} (default: \texttt{Exam}) Title of
 the exam (used in statistics reports).
@@ -397,11 +402,14 @@ with the following parameters:
   \begin{tabular}{cll}
     quantity & config option & description \\
     \hline
-    $M_0$ & --- & median of old (uncurved) scores \\
-    $M_1$ & \texttt{curve_new_median} & desired median of new (curved) scores \\
+    $M_0$ & \texttt{curve_old_midpoint} & midpoint of old (uncurved) scores \\
+    $M_1$ & \texttt{curve_new_midpoint} & desired midpoint of new (curved) scores \\
     $Z_1$ & \texttt{curve_new_zero} & desired new (curved) score for old zero score
   \end{tabular}
 \end{center}
+While there is no requirement to do so, it is a good choice to use the
+median of the uncurved scores for the old midpoint, and the desired
+median of the curved scores for the new midpoint.
 
 \begin{figure}
   \centering
