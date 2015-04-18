@@ -2137,6 +2137,13 @@ def write_stats_tex_question_summary_correlation(out_f, d):
     out_f.write(r"y tick label as interval," + "\n")
     out_f.write(r"xtick=data," + "\n")
     out_f.write(r"ytick=data," + "\n")
+    non_diag_corr = d.r_s_QQ.copy()
+    for Qi in range(d.N_Q):
+        non_diag_corr[Qi,Qi] = 0
+    max_abs = np.abs(non_diag_corr).max()
+    out_f.write(r"point meta max=%g," % max_abs + "\n")
+    out_f.write(r"point meta min=%g," % -max_abs + "\n")
+    out_f.write(r"colormap={RdBl}{rgb255=(255,45,25) color=(white) rgb255=(25,45,255)}," + "\n")
     out_f.write(r"colorbar style={" + "\n")
     out_f.write(r"  ylabel={correlation coeff. $r^{\rm s}_{QQ}(Q_1,Q_2)$}," + "\n")
     out_f.write(r"  every axis y label/.style=" + "\n")
