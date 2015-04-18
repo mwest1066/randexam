@@ -1,4 +1,9 @@
 
+1.13.0 - XXXX-XX-XX
+
+  * Fix total point calculation to include questions without
+    answers.
+
 1.12.0 - 2015-03-22
 
   * Fix boolean variable bug in `config.ini`.

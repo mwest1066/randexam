@@ -694,10 +694,13 @@ def extract_points(library, N_A):
         for Vi in range(N_V):
             for Ai in range(N_A):
                 if Vi < len(flat_questions[Qi].variants):
-                    if Ai < len(flat_questions[Qi].variants[Vi].answers):
-                        if flat_questions[Qi].variants[Vi].answers[Ai].correct:
-                            C[Qi,Vi] = ind2chr(Ai)
-                            P[Qi,Vi,Ai] = flat_questions[Qi].points
+                    if len(flat_questions[Qi].variants[Vi].answers) > 0:
+                        if Ai < len(flat_questions[Qi].variants[Vi].answers):
+                            if flat_questions[Qi].variants[Vi].answers[Ai].correct:
+                                C[Qi,Vi] = ind2chr(Ai)
+                                P[Qi,Vi,Ai] = flat_questions[Qi].points
+                    else:
+                        P[Qi,Vi,Ai] = flat_questions[Qi].points
     log_array(P, "P", ["N_Q", "N_V", "N_A"])
     log_array(C, "C", ["N_Q", "N_V"])
     log("Successfully completed extracting points from library data")
