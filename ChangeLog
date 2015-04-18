@@ -4,6 +4,9 @@
   * Fix total point calculation to include questions without
     answers.
 
+  * Fix email sending to include `mail_message_text` so that it is
+    visible in MIME-enabled mail readers.
+
 1.12.0 - 2015-03-22
 
   * Fix boolean variable bug in `config.ini`.
