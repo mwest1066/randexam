@@ -154,7 +154,7 @@ pdflatex -shell-escape filename.tex
   \end{enumerate}
 \end{enumerate}
 
-\section{Configuration Options}
+\section{Configuration Options in \texttt{config.ini}}
 
 \hangindent=1cm \texttt{answers_per_question} (default: \texttt{5})
 Number of possible answers per question on the Scantron form. That is,
@@ -394,22 +394,24 @@ The number of decimal places to which total scores are truncated.
 
 \section{Curving exam scores}
 
-If score curving is enabled (by the \texttt{curve_scores}
-configuration parameter) then the final student scores are transformed
-using the piecewise linear function shown in Figure~\ref{fig:curve}
-with the following parameters:
-\begin{center}
-  \begin{tabular}{cll}
-    quantity & config option & description \\
-    \hline
-    $M_0$ & \texttt{curve_old_midpoint} & midpoint of old (uncurved) scores \\
-    $M_1$ & \texttt{curve_new_midpoint} & desired midpoint of new (curved) scores \\
-    $Z_1$ & \texttt{curve_new_zero} & desired new (curved) score for old zero score
-  \end{tabular}
-\end{center}
-While there is no requirement to do so, it is a good choice to use the
-median of the uncurved scores for the old midpoint, and the desired
-median of the curved scores for the new midpoint.
+\begin{enumerate}
+\item If score curving is enabled (by the \texttt{curve_scores}
+  configuration parameter) then the final student scores are
+  transformed using the piecewise linear function shown in
+  Figure~\ref{fig:curve} with the following parameters:
+  \begin{center}
+    \begin{tabular}{cll}
+      quantity & config option & description \\
+      \hline
+      $M_0$ & \texttt{curve_old_midpoint} & midpoint of old (uncurved) scores \\
+      $M_1$ & \texttt{curve_new_midpoint} & desired midpoint of new (curved) scores \\
+      $Z_1$ & \texttt{curve_new_zero} & desired new (curved) score for old zero score
+    \end{tabular}
+  \end{center}
+\item While there is no requirement to do so, it is a good choice to
+  use the median of the uncurved scores for the old midpoint, and the
+  desired median of the curved scores for the new midpoint.
+\end{enumerate}
 
 \begin{figure}
   \centering
