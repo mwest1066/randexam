@@ -7,6 +7,11 @@
   * Fix email sending to include `mail_message_text` so that it is
     visible in MIME-enabled mail readers.
 
+  * Add override of question scores and import of manually-graded
+    scores from `override.csv`.
+
+  * Add question-correlation plot to exam statistics.
+
 1.12.0 - 2015-03-22
 
   * Fix boolean variable bug in `config.ini`.
