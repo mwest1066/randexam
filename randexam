@@ -2424,6 +2424,8 @@ def send_email(u, config):
                     log_and_print("ERROR: unable to find file: %s" % rawscan_filename)
                     raise Exception("rawscan file not found")
 
+                outer.attach(email.mime.text.MIMEText(msg_txt + '\n\n', 'plain'))
+
                 with open(input_filename, "rb") as in_f:
                     pdf_data = in_f.read()
                     msg = email.mime.application.MIMEApplication(pdf_data, _subtype="pdf")
@@ -2436,8 +2438,6 @@ def send_email(u, config):
                         msg = email.mime.application.MIMEApplication(pdf_data, _subtype="pdf")
                         msg.add_header('Content-Disposition', 'attachment', filename=input_basename)
                         outer.attach(msg)
-
-                outer.attach(email.mime.text.MIMEText(msg_txt, 'plain'))
 
                 composed = outer.as_string()
                 start_time = time.clock()
