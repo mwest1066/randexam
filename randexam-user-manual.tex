@@ -468,6 +468,41 @@ median of the curved scores for the new midpoint.
   the \texttt{max_answers_per_question} variable.
 \end{enumerate}
 
+\section{Overriding question scores}
+
+\begin{enumerate}
+\item For questions that must be hand-graded, or for questions where
+  the automatically computed scores are incorrect for some reason, it
+  can be necessary to manually override the scores.
+\item To override the scores for some students on some questions,
+  create a file called \texttt{<filename_prefix>_override.csv} in the
+  same directory as \texttt{randexam} and enter the override
+  scores. If present, this file will be automatically read by
+  \texttt{randexam} whenever scores are being computed (e.g., with the
+  \texttt{proc-ans} command).
+\item The override file should be formatted as a CSV file with the
+  first row being a header and then having one row per student. The
+  first column must be the student NetID (capitalized) and then there
+  is one column per question. The question number is given in the
+  first row of the column, and then later rows specify the override
+  scores for each student. Any students or questions not listed will
+  not be overridden. An entry of \texttt{-1} means to not override
+  that score, while any non-negative number is an override.
+\item For example, consider the override file:
+\begin{verbatim}
+NetID,8,13
+RDEVILLE,0.4,7
+MWEST,0,-1
+\end{verbatim}
+  Here two students have override scores specified for two
+  questions. Student \texttt{RDEVILLE} will have a score of 0.4 for
+  library question $Q = 8$ and a score of $7$ for question $Q =
+  13$. Student \texttt{MWEST} will have a score of zero for question
+  $Q = 8$, but for question $Q = 13$ his score will not be overridden,
+  meaning it will be computed from the answer and points data as
+  usual.
+\end{enumerate}
+
 \section{Interpreting the exam statistics}
 
 \begin{enumerate}
