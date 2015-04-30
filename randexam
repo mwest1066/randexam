@@ -1739,7 +1739,10 @@ def generate_scores_and_statistics(output_prefix, P_over, P, K, Q, V, A, u, k, b
 
     d.R_QV = np.zeros((d.N_Q, d.N_V))
     for Qi in range(d.N_Q):
-        d.R_QV[Qi,:] = d.Pbar_QV[Qi,:] / (d.Pbar_Q[Qi] if d.Pbar_Q[Qi] != 0 else 1)
+        if d.Pbar_Q[Qi] != 0:
+            d.R_QV[Qi,:] = d.Pbar_QV[Qi,:] / d.Pbar_Q[Qi]
+        else:
+            d.R_QV[Qi,:] = 1
     write_csv(output_prefix + "_R_QV.csv", ["Q", "R(Q,V=%d)"], d.R_QV)
 
     R_QV_threshold_high = 1.2
@@ -2084,11 +2087,12 @@ def write_stats_tex_variant_summary(out_f, d, config):
 
     for Qi in range(d.N_Q):
         if d.P_max_Q[Qi] > 0:
-            out_f.write(r"\addplot[mark=none,draw=black,thick,forget plot] coordinates {" + "\n")
             R_vals = [d.R_QV[Qi,Vi] for Vi in range(d.N_V) if d.n_s_QV[Qi,Vi] > 0]
-            out_f.write(r"(%g,%g)" % (Qi + 1, min(R_vals) * 100) + "\n")
-            out_f.write(r"(%g,%g)" % (Qi + 1, max(R_vals) * 100) + "\n")
-            out_f.write(r"};" + "\n")
+            if len(R_vals) > 1:
+                out_f.write(r"\addplot[mark=none,draw=black,thick,forget plot] coordinates {" + "\n")
+                out_f.write(r"(%g,%g)" % (Qi + 1, min(R_vals) * 100) + "\n")
+                out_f.write(r"(%g,%g)" % (Qi + 1, max(R_vals) * 100) + "\n")
+                out_f.write(r"};" + "\n")
 
     for Vi in range(d.N_V):
         out_f.write(r"\addplot+[only marks] coordinates {" + "\n")
@@ -2143,6 +2147,7 @@ def write_stats_tex_question_summary_correlation(out_f, d):
     non_diag_corr = d.r_s_QQ.copy()
     for Qi in range(d.N_Q):
         non_diag_corr[Qi,Qi] = 0
+    non_diag_corr = np.nan_to_num(non_diag_corr)
     max_abs = np.abs(non_diag_corr).max()
     out_f.write(r"point meta max=%g," % max_abs + "\n")
     out_f.write(r"point meta min=%g," % -max_abs + "\n")
@@ -2161,7 +2166,7 @@ def write_stats_tex_question_summary_correlation(out_f, d):
         for Qj in range(d.N_Q + 1):
             line.append(r"(%g,%g,%g)"
                         % (Qj + 1, Qi + 1,
-                           d.r_s_QQ[Qi,Qj] if Qi != Qj and Qi < d.N_Q and Qj < d.N_Q else 0))
+                           non_diag_corr[Qi,Qj] if Qi < d.N_Q and Qj < d.N_Q else 0))
         lines.append(" ".join(line))
     out_f.write("\n\n".join(lines))
     out_f.write(r"};" + "\n")
