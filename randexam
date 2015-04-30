@@ -151,9 +151,11 @@ def main():
         N_A = config["answers_per_question"]
         (P, C) = extract_points(library, N_A)
         (K, Q, V, A) = read_specs(config["specs_filename"])
+        (N_e, N_Q, N_A) = A.shape
         (u, k, b) = read_answers(config["answers_filename"], N_A)
         P = read_points(config["points_filename"])
         c = generate_solutions(Q, V, A, C)
+        P_over = read_override(config["override_filename"], u, N_Q)
         (e, P_seq, P_se, P_sq, P_s, P_sQ, P_curve_s) = generate_scores(P_over, P, K, Q, V, A, u, k, b, config)
         generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, config)
     elif command == "proc-email":
