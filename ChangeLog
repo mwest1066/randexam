@@ -12,6 +12,8 @@
 
   * Add question-correlation plot to exam statistics.
 
+  * Fix newline handling on Python 2.X with nonstandard newlines.
+
 1.12.0 - 2015-03-22
 
   * Fix boolean variable bug in `config.ini`.

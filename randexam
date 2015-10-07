@@ -22,11 +22,13 @@ if sys.version_info[0] < 3 and sys.version_info[1] < 7:
     sys.exit(1)
 elif sys.version_info[0] < 3:
     # Python 2.x
+    CSV_FILE_READER_MODE = "rU"
     CSV_WRITER_ARGS = {"mode": "wb"}
     INPUT_FUNC = raw_input
     import ConfigParser as configparser
 else:
     # Python 3.x
+    CSV_FILE_READER_MODE = "r"
     CSV_WRITER_ARGS = {"mode": "w", "newline": ""}
     INPUT_FUNC = input
     import configparser
@@ -736,7 +738,7 @@ def read_points(input_filename):
     V_data = []
     A_data = []
     P_data = []
-    with open(input_filename, "r") as in_f:
+    with open(input_filename, CSV_FILE_READER_MODE) as in_f:
         reader = csv.reader(in_f)
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
@@ -775,7 +777,7 @@ def read_override(input_filename, u, N_Q):
 
     log_and_print("Reading override points data from file: %s" % input_filename)
     P_over_data = {}
-    with open(input_filename, "r") as in_f:
+    with open(input_filename, CSV_FILE_READER_MODE) as in_f:
         reader = csv.reader(in_f)
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
@@ -928,7 +930,7 @@ def read_specs(input_filename):
     Q_data = []
     V_data = []
     A_data = []
-    with open(input_filename, "r") as in_f:
+    with open(input_filename, CSV_FILE_READER_MODE) as in_f:
         reader = csv.reader(in_f)
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
@@ -1169,7 +1171,7 @@ def read_solutions(input_filename):
     log_and_print("Reading solutions from file:%s" % input_filename)
     k_data = []
     a_data = []
-    with open(input_filename, "r") as in_f:
+    with open(input_filename, CSV_FILE_READER_MODE) as in_f:
         reader = csv.reader(in_f)
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
@@ -1311,7 +1313,7 @@ def read_answers(input_filename, N_A):
     u_data = []
     k_data = []
     b_data = []
-    with open(input_filename, "r") as in_f:
+    with open(input_filename, CSV_FILE_READER_MODE) as in_f:
         reader = csv.reader(in_f)
         for (i_row, row) in enumerate(reader):
             if i_row == 0:
