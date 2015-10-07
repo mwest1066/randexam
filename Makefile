@@ -1,6 +1,6 @@
 
-VERSION = 1.12.0
-RELEASE_DATE = 2015-03-22
+VERSION = 1.13.0
+RELEASE_DATE = 2015-10-07
 RELEASE_NAME = randexam-$(VERSION)
 
 RELEASE_FILES = ChangeLog Makefile README.md LICENSE randexam preproc randexam-user-manual.tex randexam-user-manual.pdf randexam-dev-manual.tex randexam-dev-manual.pdf config.ini course_sem_exam1_library.tex course_sem_exam1_scantron.dat course_sem_exam1_netids.txt pipeline.gv statemachine.gv
