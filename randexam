@@ -17,7 +17,7 @@ SCORE_PER_ANSWERS = [0., 1., 1./2., 1./3., 0., 0.] # partial credit values vs. n
 ######################################################################
 # python 2.X versus 3.X differences
 
-if sys.version_info[0] < 3 and sys.version_info[1] < 7:
+if sys.version_info[0] < 3 and sys.version_info[1] < 6:
     print("This script requires python version at least 2.7, current version is %s" % sys.version)
     sys.exit(1)
 elif sys.version_info[0] < 3:
@@ -770,7 +770,7 @@ def read_override(input_filename, u, N_Q):
     Read the override points array P_over from the override.csv file.
     """
     N_s = u.shape[0]
-    P_over = np.full((N_s, N_Q), -1, dtype=float)
+    P_over = np.full((N_s, N_Q), -1.0, dtype=float)
     if not os.path.exists(input_filename):
         log_and_print("Override points file not found, skipping: %s" % input_filename)
         return P_over
@@ -1360,16 +1360,30 @@ def read_netids(input_filename):
 def check_netids(u, netids):
     log_and_print("Checking NetIDs")
     N_s = u.shape[0]
+    netids_file_count = {}
+    for netid in netids:
+        if netid not in netids_file_count:
+            netids_file_count[netid] = 0
+        netids_file_count[netid] += 1
     netids_file = set(netids)
-    netids_file_count = collections.Counter(netids_file)
-    netids_scantron = set([u[si,3] for si in range(N_s)])
+    netids_scantron_list = [u[si,3] for si in range(N_s)]
+    netids_scantron_count = {}
+    for netid in netids_scantron_list:
+        if netid not in netids_scantron_count:
+            netids_scantron_count[netid] = 0
+        netids_scantron_count[netid] += 1
+    netids_scantron = set(netids_scantron_list)
     netids_file_not_scantron = netids_file - netids_scantron
     netids_scantron_not_file = netids_scantron - netids_file
     netid_check_ok = True
-    for netid in netids_file:
-        if netids_file_count[netid] > 1:
+    for (netid, count) in netids_file_count.iteritems():
+        if count > 1:
             netid_check_ok = False
-            log_and_print("WARNING: Scantron NetID \"%s\" found multiple times." % netid)
+            log_and_print("WARNING: NetID \"%s\" found multiple times in netids file." % netid)
+    for (netid, count) in netids_scantron_count.iteritems():
+        if count > 1:
+            netid_check_ok = False
+            log_and_print("WARNING: NetID \"%s\" found multiple times in Scantron file." % netid)
     for netid in netids_scantron_not_file:
         netid_check_ok = False
         matches = difflib.get_close_matches(netid, netids_file_not_scantron)

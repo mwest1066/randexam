@@ -14,6 +14,8 @@
 
   * Fix newline handling on Python 2.X with nonstandard newlines.
 
+  * Enable Python 2.6 compatibility.
+
 1.12.0 - 2015-03-22
 
   * Fix boolean variable bug in `config.ini`.
