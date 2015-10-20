@@ -770,7 +770,7 @@ def read_override(input_filename, u, N_Q):
     Read the override points array P_over from the override.csv file.
     """
     N_s = u.shape[0]
-    P_over = np.full((N_s, N_Q), -1.0, dtype=float)
+    P_over = -1.0 * np.ones((N_s, N_Q), dtype=float)
     if not os.path.exists(input_filename):
         log_and_print("Override points file not found, skipping: %s" % input_filename)
         return P_over
