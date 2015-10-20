@@ -1376,11 +1376,11 @@ def check_netids(u, netids):
     netids_file_not_scantron = netids_file - netids_scantron
     netids_scantron_not_file = netids_scantron - netids_file
     netid_check_ok = True
-    for (netid, count) in netids_file_count.iteritems():
+    for (netid, count) in netids_file_count.items():
         if count > 1:
             netid_check_ok = False
             log_and_print("WARNING: NetID \"%s\" found multiple times in netids file." % netid)
-    for (netid, count) in netids_scantron_count.iteritems():
+    for (netid, count) in netids_scantron_count.items():
         if count > 1:
             netid_check_ok = False
             log_and_print("WARNING: NetID \"%s\" found multiple times in Scantron file." % netid)
