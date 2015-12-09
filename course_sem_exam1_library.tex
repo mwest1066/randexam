@@ -1,4 +1,5 @@
 \documentclass{article}
+% \usepackage{multicol}
 \usepackage{amsmath,amssymb}
 \usepackage[margin=3cm]{geometry}
 \usepackage{graphicx,color}
@@ -13,6 +14,7 @@
 \newcommand{\question}[1]{\newpage \refstepcounter{question} \setcounter{variant}{0} \setcounter{questionpoints}{#1}}
 \newcommand{\variant}{\vspace{4em}\refstepcounter{variant}\noindent \arabic{question}/\arabic{variant}. (\arabic{questionpoints} point\ifnum \thequestionpoints > 1 s\fi) }
 \newenvironment{answers}{\begin{enumerate}}{\end{enumerate}}
+% \newenvironment{columnanswers}{\begin{multicols}{2}\begin{enumerate}}{\end{enumerate}\end{multicols}}
 \newcommand{\answer}{\item }
 \newcommand{\correctanswer}{\item $\bigstar$ }
 \renewcommand{\theenumi}{\Alph{enumi}}

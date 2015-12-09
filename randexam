@@ -455,10 +455,12 @@ def read_library(input_filename, config):
         LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9.]+)\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$"),
         LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="begin_columnanswers", regexp=r"^\s*\\begin\{columnanswers\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="begin_solution", regexp=r"^\s*\\begin\{solution\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="answer", regexp=r"^\s*\\answer(?P<tail>.*)$"),
         LibraryRegexp(name="correct_answer", regexp=r"^\s*\\correctanswer(?P<tail>.*)$"),
         LibraryRegexp(name="end_answers", regexp=r"^\s*\\end\{answers\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="end_columnanswers", regexp=r"^\s*\\end\{columnanswers\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="end_solution", regexp=r"^\s*\\end\{solution\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="end_document", regexp=r"^\s*\\end\{document\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="comment", regexp=r"^\s*%.*$"),
@@ -517,6 +519,7 @@ def read_library(input_filename, config):
             state.question.variants.append(state.variant)
             state.variant.line_number = i_line + 1
             state.variant.body = match.group("tail").strip()
+            state.variant.columns = 1
             if len(state.variant.body) > 0:
                 state.variant.body += "\n";
         def new_answer(correct):
@@ -540,6 +543,9 @@ def read_library(input_filename, config):
         def append_to_variant_body():
             file_log("appending line to variant body")
             state.variant.body += line
+        def mark_column_variant():
+            file_log("marking variant as having multiple columns")
+            state.variant.columns = 2
         def append_to_answer_body():
             file_log("appending line to answer body")
             state.answer.body += line
@@ -580,6 +586,7 @@ def read_library(input_filename, config):
             elif match_name == "text":           append_to_variant_body()
             elif match_name == "blank":          append_to_variant_body()
             elif match_name == "begin_answers":  transition("answers")
+            elif match_name == "begin_columnanswers":  mark_column_variant(); transition("answers")
             elif match_name == "begin_solution": transition("solution")
             else: bad_transition()
         elif state.name == "answers":
@@ -595,6 +602,7 @@ def read_library(input_filename, config):
             elif match_name == "correct_answer": transition("answer"); new_answer(correct=True)
             elif match_name == "answer":         transition("answer"); new_answer(correct=False)
             elif match_name == "end_answers":    transition("presolution")
+            elif match_name == "end_columnanswers":    transition("presolution")
             else: bad_transition()
         elif state.name == "presolution":
             if match_name == "comment":          file_log("skipping comment line")
@@ -1083,6 +1091,8 @@ def write_exams(output_filename, library, K, Q, V, A, config):
                     out_f.write(variant.body + "\n")
                     n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
                     if n_answers > 0:
+                        if variant.columns == 2:
+                            out_f.write(r"\begin{multicols}{2}" + "\n")
                         out_f.write(r"\begin{enumerate}" + "\n")
                         for ai in range(N_A):
                             Ai = chr2ind(A[ei,qi,ai])
@@ -1090,9 +1100,11 @@ def write_exams(output_filename, library, K, Q, V, A, config):
                                 out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
                                 out_f.write(variant.answers[Ai].body + "\n")
                         out_f.write(r"\end{enumerate}" + "\n")
+                        if variant.columns == 2:
+                            out_f.write(r"\end{multicols}" + "\n")
                     if not config["one_page_per_question"]:
-                        out_f.write(r"\vspace*{10em}" + "\n")
                         out_f.write(r"\end{minipage}" + "\n")
+                        out_f.write(r"\vspace{10em}" + "\n")
                         out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
 
                     qi += 1
@@ -1101,11 +1113,12 @@ def write_exams(output_filename, library, K, Q, V, A, config):
             out_f.write(r"\ifnum\maxrawpages<\thepage \maxrawpages=\thepage\fi" + "\n")
             out_f.write("\n")
             out_f.write(r"\ifnum\thepage<%d" % config["minimum_pages_per_exam"] + "\n")
-            out_f.write(r"\padcount=\thepage" + "\n")
+            # out_f.write(r"\padcount=\thepage" + "\n")
             out_f.write(r"\loop" + "\n")
             out_f.write(r"\newpage \ \par \vspace*{\fill}\centerline{This page is intentionally left blank.}\vspace*{\fill}" + "\n")
-            out_f.write(r"\advance \padcount 1" + "\n")
-            out_f.write(r"\ifnum \padcount<%d" % config["minimum_pages_per_exam"] + "\n")
+            # out_f.write(r"\advance \padcount 1" + "\n")
+            # out_f.write(r"\ifnum \padcount<%d" % config["minimum_pages_per_exam"] + "\n")
+            out_f.write(r"\ifnum \thepage<%d" % config["minimum_pages_per_exam"] + "\n")
             out_f.write(r"\repeat" + "\n")
             out_f.write(r"\fi" + "\n")
             out_f.write("\n")
@@ -2482,6 +2495,8 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, con
                         out_f.write(variant.body + "\n")
                         n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
                         if n_answers > 0:
+                            if variant.columns == 2:
+                                out_f.write(r"\begin{multicols}{2}" + "\n")
                             out_f.write(r"\begin{enumerate}" + "\n")
                             for ai in range(N_A):
                                 Ai = chr2ind(A[ei,qi,ai])
@@ -2489,6 +2504,8 @@ def generate_feedback(library, Q, V, A, u, k, b, e, P_sq, P_s, P_curve_s, c, con
                                     out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
                                     out_f.write(variant.answers[Ai].body + "\n")
                             out_f.write(r"\end{enumerate}" + "\n")
+                            if variant.columns == 2:
+                                out_f.write(r"\end{multicols}" + "\n")
                             answer_color = "blue" if b[si,qi,chr2ind(c[ei,qi])] else "red"
                             out_f.write(r"{{\bf Correct answer:} %s.} \\ {\color{%s}{\bf Your answer:} {%s}.\\}"
                                         % (c[ei,qi], answer_color, bubble2string(b[si,qi])))
@@ -2686,6 +2703,8 @@ def write_full_solutions(output_filename, library, K, Q, V, A, config):
                     out_f.write("\n")
                     n_answers = len([ai for ai in range(N_A) if chr2ind(A[ei,qi,ai]) >= 0])
                     if n_answers > 0:
+                        if variant.columns == 2:
+                            out_f.write(r"\begin{multicols}{2}" + "\n")
                         out_f.write(r"\begin{enumerate}" + "\n")
                         for ai in range(N_A):
                             Ai = chr2ind(A[ei,qi,ai])
@@ -2697,6 +2716,8 @@ def write_full_solutions(output_filename, library, K, Q, V, A, config):
                                     out_f.write(r"\item[(%s)]" % ind2chr(ai) + "\n")
                                     out_f.write(variant.answers[Ai].body + "\n")
                         out_f.write(r"\end{enumerate}" + "\n")
+                        if variant.columns == 2:
+                            out_f.write(r"\end{multicols}" + "\n")
                         out_f.write("\n")
                     out_f.write(r"\vspace*{2em}" + "\n")
                     out_f.write(r"\hrule" + "\n")

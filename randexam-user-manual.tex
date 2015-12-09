@@ -152,6 +152,18 @@ pdflatex -shell-escape filename.tex
     use of \texttt{-output-directory} is incompatible with the TikZ
     external file support.
   \end{enumerate}
+% documentation for multicol package
+  \item Answers can be given in \textit{columns} by using the multicol
+    package. This requires the usage of the \texttt{columnanswers} environment
+    in order for randexam to parse it properly. The latex file for the library
+    will need to include the following lines if not already present:
+\begin{verbatim}
+\usepackage{multicol}
+\newenvironment{columnanswers}{%
+\begin{multicols}{2}\begin{enumerate}}%
+{\end{enumerate}\end{multicols}}
+\end{verbatim}
+    These lines are already included, but commented out, in the example library.
 \end{enumerate}
 
 \section{Configuration Options in \texttt{config.ini}}
