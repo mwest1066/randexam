@@ -1118,7 +1118,7 @@ def write_exams(output_filename, library, K, Q, V, A, config):
             out_f.write(r"\newpage \ \par \vspace*{\fill}\centerline{This page is intentionally left blank.}\vspace*{\fill}" + "\n")
             # out_f.write(r"\advance \padcount 1" + "\n")
             # out_f.write(r"\ifnum \padcount<%d" % config["minimum_pages_per_exam"] + "\n")
-            out_f.write(r"\ifnum \thepage<%d" % min_pages + "\n")
+            out_f.write(r"\ifnum \thepage<%d" % config["minimum_pages_per_exam"] + "\n")
             out_f.write(r"\repeat" + "\n")
             out_f.write(r"\fi" + "\n")
             out_f.write("\n")
