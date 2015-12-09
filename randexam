@@ -1103,8 +1103,8 @@ def write_exams(output_filename, library, K, Q, V, A, config):
                         if variant.columns == 2:
                             out_f.write(r"\end{multicols}" + "\n")
                     if not config["one_page_per_question"]:
-                        out_f.write(r"\vspace*{10em}" + "\n")
                         out_f.write(r"\end{minipage}" + "\n")
+                        out_f.write(r"\vspace{10em}" + "\n")
                         out_f.write(r"\filbreak\vfil\penalty-200\vfilneg" + "\n\n")
 
                     qi += 1
@@ -1113,11 +1113,12 @@ def write_exams(output_filename, library, K, Q, V, A, config):
             out_f.write(r"\ifnum\maxrawpages<\thepage \maxrawpages=\thepage\fi" + "\n")
             out_f.write("\n")
             out_f.write(r"\ifnum\thepage<%d" % config["minimum_pages_per_exam"] + "\n")
-            out_f.write(r"\padcount=\thepage" + "\n")
+            # out_f.write(r"\padcount=\thepage" + "\n")
             out_f.write(r"\loop" + "\n")
             out_f.write(r"\newpage \ \par \vspace*{\fill}\centerline{This page is intentionally left blank.}\vspace*{\fill}" + "\n")
-            out_f.write(r"\advance \padcount 1" + "\n")
-            out_f.write(r"\ifnum \padcount<%d" % config["minimum_pages_per_exam"] + "\n")
+            # out_f.write(r"\advance \padcount 1" + "\n")
+            # out_f.write(r"\ifnum \padcount<%d" % config["minimum_pages_per_exam"] + "\n")
+            out_f.write(r"\ifnum \thepage<%d" % min_pages + "\n")
             out_f.write(r"\repeat" + "\n")
             out_f.write(r"\fi" + "\n")
             out_f.write("\n")
