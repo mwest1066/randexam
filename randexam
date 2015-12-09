@@ -337,11 +337,13 @@ class LibraryRegexp:
 
     name is used to specify which rule matched
     regexp is the actual regular expression for the line
+    no_head indicates whether leading text before the regexp is permitted
     no_tail indicates whether trailing text after the regexp is permitted
     """
-    def __init__(self, name, regexp, no_tail=False):
+    def __init__(self, name, regexp, no_head=False, no_tail=False):
         self.name = name
         self.regexp = regexp
+        self.no_head = no_head
         self.no_tail = no_tail
 
 class ReadState:
@@ -449,20 +451,22 @@ def read_library(input_filename, config):
         input_file = open(input_filename, "r")
     except Exception as e:
         die("ERROR: Unable to open library file for reading: %s: %s" % (input_filename, e))
+    head_re = r"^(?P<head>(?:(?!\\newcommand\{).)*)"
+    tail_re = r"(?P<tail>.*)$"
     library_regexps = [
-        LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$"),
-        LibraryRegexp(name="question", regexp=r"^\s*\\question\{(?P<points>[0-9.]+)\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="variant", regexp=r"^\s*\\variant(?P<tail>.*)$"),
-        LibraryRegexp(name="begin_answers", regexp=r"^\s*\\begin\{answers\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="begin_columnanswers", regexp=r"^\s*\\begin\{columnanswers\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="begin_solution", regexp=r"^\s*\\begin\{solution\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="answer", regexp=r"^\s*\\answer(?P<tail>.*)$"),
-        LibraryRegexp(name="correct_answer", regexp=r"^\s*\\correctanswer(?P<tail>.*)$"),
-        LibraryRegexp(name="end_answers", regexp=r"^\s*\\end\{answers\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="end_columnanswers", regexp=r"^\s*\\end\{columnanswers\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="end_solution", regexp=r"^\s*\\end\{solution\}(?P<tail>.*)$", no_tail=True),
-        LibraryRegexp(name="end_document", regexp=r"^\s*\\end\{document\}(?P<tail>.*)$", no_tail=True),
+        LibraryRegexp(name="begin_document", regexp=head_re + r"\\begin\{document\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="zone", regexp=head_re + r"\\zone\b" + tail_re, no_head=True),
+        LibraryRegexp(name="question", regexp=head_re + r"\\question\{(?P<points>[0-9.]+)\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="variant", regexp=head_re + r"\\variant\b" + tail_re, no_head=True),
+        LibraryRegexp(name="begin_answers", regexp=head_re + r"\\begin\{answers\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="begin_columnanswers", regexp=head_re + r"\\begin\{columnanswers\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="begin_solution", regexp=head_re + r"\\begin\{solution\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="answer", regexp=head_re + r"\\answer\b" + tail_re, no_head=True),
+        LibraryRegexp(name="correct_answer", regexp=head_re + r"\\correctanswer\b" + tail_re, no_head=True),
+        LibraryRegexp(name="end_answers", regexp=head_re + r"\\end\{answers\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="end_columnanswers", regexp=head_re + r"\\end\{columnanswers\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="end_solution", regexp=head_re + r"\\end\{solution\}" + tail_re, no_head=True, no_tail=True),
+        LibraryRegexp(name="end_document", regexp=head_re + r"\\end\{document\}" + tail_re, no_head=True, no_tail=True),
         LibraryRegexp(name="comment", regexp=r"^\s*%.*$"),
         LibraryRegexp(name="text", regexp=r"^.*\S.*$"),
         LibraryRegexp(name="blank", regexp=r"^\s*$"),
@@ -482,10 +486,14 @@ def read_library(input_filename, config):
             match = re.match(library_regexp.regexp, line)
             if match:
                 match_name = library_regexp.name
+                if library_regexp.no_head:
+                    head_text = match.group("head").strip()
+                    if len(head_text) > 0:
+                        file_die("invalid extra text before '%s': %s" % (match_name, head_text))
                 if library_regexp.no_tail:
-                    extra_text = match.group("tail").strip()
-                    if len(extra_text) > 0 and extra_text[0] != "%":
-                        file_die("invalid extra text following '%s': %s" % (match_name, extra_text))
+                    tail_text = match.group("tail").strip()
+                    if len(tail_text) > 0 and tail_text[0] != "%":
+                        file_die("invalid extra text following '%s': %s" % (match_name, tail_text))
                 break
         else:
             file_die("no matches found for line")
