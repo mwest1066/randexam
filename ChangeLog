@@ -1,4 +1,19 @@
 
+1.14.0 - 2015-12-12
+
+  * Add multicolumn answer environment (Dallas Trinkle).
+
+  * Improve compatibility with old versions of numpy.
+
+  * Fix compatibility with Python 3.4
+
+  * Error if commands like `\answer` have text before them on the
+    line.
+
+  * Include the Mersenne Twister random number generator to guarantee
+    reproducible randomization across versions and platform. No longer
+    error on file overwrites.
+
 1.13.0 - 2015-10-07
 
   * Fix total point calculation to include questions without
