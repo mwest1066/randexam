@@ -4,8 +4,8 @@ randexam
 
 randexam: An exam randomization and grading system.
 
-Version 1.13.0  
-Released 2015-10-07
+Version 1.14.0  
+Released 2015-12-12
 
 Homepage: <http://lagrange.mechse.illinois.edu/randexam/>
 

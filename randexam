@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-VERSION = "1.13.0"
-RELEASE_DATE = "2015-10-07"
+VERSION = "1.14.0"
+RELEASE_DATE = "2015-12-12"
 
 import re, math, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
