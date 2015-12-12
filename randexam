@@ -3,7 +3,7 @@
 VERSION = "1.13.0"
 RELEASE_DATE = "2015-10-07"
 
-import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time
+import re, math, sys, itertools, string, csv, os, difflib, subprocess, collections, time
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
 import numpy as np
 
@@ -288,6 +288,86 @@ class Struct(object):
     """
     def __init__(self):
         pass
+
+######################################################################
+######################################################################
+
+class MT19937ar:
+    """Mersenne twister random number generator.
+    Derived from http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/mt19937ar.c
+    """
+    # Period parameters
+    N = 624
+    M = 397
+    MATRIX_A = 0x9908b0df   # constant vector a
+    UPPER_MASK = 0x80000000 # most significant w-r bits
+    LOWER_MASK = 0x7fffffff # least significant r bits
+
+    def __init__(self):
+        self.mt = [0] * self.N # the array for the state vector
+        self.mti = self.N + 1 # mti==N+1 means mt[N] is not initialized
+
+    def init_genrand(self, s):
+        "initializes mt[N] with a seed"
+        self.mt[0]= s & 0xffffffff
+        for self.mti in range(1, self.N):
+            self.mt[self.mti] = (1812433253 * (self.mt[self.mti-1] ^ (self.mt[self.mti-1] >> 30)) + self.mti)
+            self.mt[self.mti] &= 0xffffffff
+
+    def genrand_int32(self):
+        "generates a random number on [0,0xffffffff]-interval"
+        mag01 = [0, self.MATRIX_A]
+        if self.mti >= self.N: # generate N words at one time
+            if self.mti == self.N + 1: # if init_genrand() has not been called,
+                self.init_genrand(5489) # a default initial seed is used
+            for kk in range(self.N - self.M):
+                y = (self.mt[kk] & self.UPPER_MASK) | (self.mt[kk+1] & self.LOWER_MASK)
+                self.mt[kk] = self.mt[kk + self.M] ^ (y >> 1) ^ mag01[y & 0x1]
+            for kk in range(kk, self.N-1):
+                y = (self.mt[kk] & self.UPPER_MASK) | (self.mt[kk+1] & self.LOWER_MASK)
+                self.mt[kk] = self.mt[kk+(self.M-self.N)] ^ (y >> 1) ^ mag01[y & 0x1]
+            y = (self.mt[self.N-1] & self.UPPER_MASK) | (self.mt[0] & self.LOWER_MASK)
+            self.mt[self.N-1] = self.mt[self.M-1] ^ (y >> 1) ^ mag01[y & 0x1]
+            self.mti = 0
+        y = self.mt[self.mti]
+        self.mti += 1
+        # Tempering
+        y ^= (y >> 11)
+        y ^= (y << 7) & 0x9d2c5680
+        y ^= (y << 15) & 0xefc60000
+        y ^= (y >> 18)
+        return y
+
+class Random:
+    """Based on python 2.6 source. Local copy used here for
+    reproducibility across python versions.
+    """
+    def __init__(self):
+        self.mt = MT19937ar()
+
+    def seed(self, s):
+        self.mt.init_genrand(s)
+
+    def getrandbits(self, k):
+        if k <= 0 or k > 32:
+            raise ValueError("getrandbits() is limited to 1 to 32 bits")
+        return self.mt.genrand_int32() >> (32 - k)
+
+    def randbelow(self, n):
+        "random integer in [0,n)"
+        k = int(1.00001 + math.log(n-1, 2.0)) # from python 2.6 random.py
+        r = self.getrandbits(k)
+        while r >= n: # accept-reject to sample r
+            r = self.getrandbits(k)
+        return r
+
+    def shuffle(self, ar):
+        "Shuffle in place"
+        for i in range(len(ar) - 1, 0, -1):
+            j = self.randbelow(i + 1)
+            ar[i], ar[j] = ar[j], ar[i]
+
+random = Random()
 
 ######################################################################
 ######################################################################
@@ -899,7 +979,7 @@ def generate_specs(library, N_e, N_A, options):
         for qi in range(N_Q):
             question = flat_questions[Q[ei,qi]]
             if options["randomize_variants"]:
-                V[ei,qi] = random.randrange(len(question.variants))
+                V[ei,qi] = random.randbelow(len(question.variants))
             else:
                 V[ei,qi] = ei % len(question.variants)
             a_list = list(range(len(question.variants[V[ei,qi]].answers)))
