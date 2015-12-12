@@ -103,14 +103,6 @@ def main():
     config = read_config(CONFIG_FILENAME, DEFAULT_CONFIG)
 
     if command == "proc-lib":
-        protected_filenames = [f for f in [config["points_filename"],
-                                           config["specs_filename"],
-                                           config["exams_filename"],
-                                           config["solutions_filename"]]
-                               if os.path.exists(f)]
-        if len(protected_filenames) > 0:
-            die("ERROR: output files already exist, will not overwrite: %s"
-                  % " ".join(protected_filenames))
         random.seed(config["random_seed"])
         library = read_library(config["library_filename"], config)
         check_library(library, config)
