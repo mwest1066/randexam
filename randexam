@@ -347,6 +347,8 @@ class Random:
 
     def randbelow(self, n):
         "random integer in [0,n)"
+        if n <= 1:
+            return 0
         k = int(1.00001 + math.log(n-1, 2.0)) # from python 2.6 random.py
         r = self.getrandbits(k)
         while r >= n: # accept-reject to sample r
